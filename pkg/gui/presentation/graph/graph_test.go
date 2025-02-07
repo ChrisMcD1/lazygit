@@ -17,9 +17,10 @@ import (
 
 func TestRenderCommitGraph(t *testing.T) {
 	tests := []struct {
-		name           string
-		commits        []*models.Commit
-		expectedOutput string
+		name                  string
+		commits               []*models.Commit
+		expectedOutput        string
+		highlightedCommitHash string
 	}{
 		{
 			name: "with some merges",
@@ -148,6 +149,19 @@ func TestRenderCommitGraph(t *testing.T) {
 			6 ◯ │ │`,
 		},
 		{
+			name: "with a highlight on on a merge commit",
+			commits: []*models.Commit{
+				{Hash: "1", Parents: []string{"2", "3"}},
+				{Hash: "3", Parents: []string{"2"}},
+				{Hash: "2", Parents: []string{"4", "5"}},
+			},
+			expectedOutput: `
+			1 ⏣─╮
+			3 │ ◯
+			2 ⏣─│`,
+			highlightedCommitHash: "1",
+		},
+		{
 			name: "new merge path fills gap before continuing path on right",
 			commits: []*models.Commit{
 				{Hash: "1", Parents: []string{"2", "3", "4", "5"}},
@@ -219,7 +233,7 @@ func TestRenderCommitGraph(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			getStyle := func(c *models.Commit) style.TextStyle { return style.FgDefault }
-			lines := RenderCommitGraph(test.commits, "blah", getStyle)
+			lines := RenderCommitGraph(test.commits, test.highlightedCommitHash, getStyle)
 
 			trimmedExpectedOutput := ""
 			for _, line := range strings.Split(strings.TrimPrefix(test.expectedOutput, "\n"), "\n") {
