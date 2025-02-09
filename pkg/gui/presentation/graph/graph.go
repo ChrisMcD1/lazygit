@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"fmt"
 	"runtime"
 	"strings"
 	"sync"
@@ -21,6 +22,19 @@ const (
 	CONTINUES
 )
 
+func (p PipeKind) String() string {
+	switch p {
+	case TERMINATES:
+		return "Terminates"
+	case STARTS:
+		return "Starts"
+	case CONTINUES:
+		return "Continues"
+	default:
+		return "Unknown"
+	}
+}
+
 type Pipe struct {
 	fromPos  int
 	toPos    int
@@ -28,6 +42,16 @@ type Pipe struct {
 	toHash   string
 	kind     PipeKind
 	style    style.TextStyle
+}
+
+func (p *Pipe) String() string {
+	return fmt.Sprintf("Pipe{from: %d (%s) -> to: %d (%s), kind: %v }",
+		p.fromPos,
+		p.fromHash,
+		p.toPos,
+		p.toHash,
+		p.kind,
+	)
 }
 
 var highlightStyle = style.FgLightWhite.SetBold()
@@ -301,6 +325,8 @@ func renderPipeSet(
 	}
 	isMerge := startCount > 1
 
+	fmt.Println("our maxPos is", maxPos)
+
 	cells := lo.Map(lo.Range(maxPos+1), func(i int, _ int) *Cell {
 		return &Cell{cellType: CONNECTION, style: style.FgDefault}
 	})
@@ -310,6 +336,7 @@ func renderPipeSet(
 		right := pipe.right()
 
 		if left != right {
+			fmt.Println("pipe", pipe, "is setting left to right")
 			for i := left + 1; i < right; i++ {
 				cells[i].setLeft(style).setRight(style, overrideRightStyle)
 			}
@@ -337,11 +364,25 @@ func renderPipeSet(
 		}
 	}
 
+	fmt.Println("All pipes in set")
+	for _, pipe := range pipes {
+		fmt.Printf("Pipe: %v\n", pipe)
+	}
+
 	// so we have our commit pos again, now it's time to build the cells.
 	// we'll handle the one that's sourced from our selected commit last so that it can override the other cells.
 	selectedPipes, nonSelectedPipes := utils.Partition(pipes, func(pipe *Pipe) bool {
 		return highlight && equalHashes(pipe.fromHash, selectedCommitHash)
 	})
+
+	fmt.Println("Selected pipes")
+	for _, pipe := range selectedPipes {
+		fmt.Printf("Pipe: %v\n", pipe)
+	}
+	fmt.Println("Nonselected pipes")
+	for _, pipe := range nonSelectedPipes {
+		fmt.Printf("Pipe: %v\n", pipe)
+	}
 
 	for _, pipe := range nonSelectedPipes {
 		if pipe.kind == STARTS {
@@ -378,6 +419,7 @@ func renderPipeSet(
 	writer := &strings.Builder{}
 	writer.Grow(len(cells) * 2)
 	for _, cell := range cells {
+		fmt.Println(cell)
 		cell.render(writer)
 	}
 	return writer.String()

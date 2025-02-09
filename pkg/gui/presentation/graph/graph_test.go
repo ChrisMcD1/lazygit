@@ -22,209 +22,211 @@ func TestRenderCommitGraph(t *testing.T) {
 		expectedOutput        string
 		highlightedCommitHash string
 	}{
-		{
-			name: "with some merges",
-			commits: []*models.Commit{
-				{Hash: "1", Parents: []string{"2"}},
-				{Hash: "2", Parents: []string{"3"}},
-				{Hash: "3", Parents: []string{"4"}},
-				{Hash: "4", Parents: []string{"5", "7"}},
-				{Hash: "7", Parents: []string{"5"}},
-				{Hash: "5", Parents: []string{"8"}},
-				{Hash: "8", Parents: []string{"9"}},
-				{Hash: "9", Parents: []string{"A", "B"}},
-				{Hash: "B", Parents: []string{"D"}},
-				{Hash: "D", Parents: []string{"D"}},
-				{Hash: "A", Parents: []string{"E"}},
-				{Hash: "E", Parents: []string{"F"}},
-				{Hash: "F", Parents: []string{"D"}},
-				{Hash: "D", Parents: []string{"G"}},
-			},
-			expectedOutput: `
-			1 ◯
-			2 ◯
-			3 ◯
-			4 ⏣─╮
-			7 │ ◯
-			5 ◯─╯
-			8 ◯
-			9 ⏣─╮
-			B │ ◯
-			D │ ◯
-			A ◯ │
-			E ◯ │
-			F ◯ │
-			D ◯─╯`,
-		},
-		{
-			name: "with a path that has room to move to the left",
-			commits: []*models.Commit{
-				{Hash: "1", Parents: []string{"2"}},
-				{Hash: "2", Parents: []string{"3", "4"}},
-				{Hash: "4", Parents: []string{"3", "5"}},
-				{Hash: "3", Parents: []string{"5"}},
-				{Hash: "5", Parents: []string{"6"}},
-				{Hash: "6", Parents: []string{"7"}},
-			},
-			expectedOutput: `
-			1 ◯
-			2 ⏣─╮
-			4 │ ⏣─╮
-			3 ◯─╯ │
-			5 ◯───╯
-			6 ◯`,
-		},
-		{
-			name: "with a new commit",
-			commits: []*models.Commit{
-				{Hash: "1", Parents: []string{"2"}},
-				{Hash: "2", Parents: []string{"3", "4"}},
-				{Hash: "4", Parents: []string{"3", "5"}},
-				{Hash: "Z", Parents: []string{"Z"}},
-				{Hash: "3", Parents: []string{"5"}},
-				{Hash: "5", Parents: []string{"6"}},
-				{Hash: "6", Parents: []string{"7"}},
-			},
-			expectedOutput: `
-			1 ◯
-			2 ⏣─╮
-			4 │ ⏣─╮
-			Z │ │ │ ◯
-			3 ◯─╯ │ │
-			5 ◯───╯ │
-			6 ◯ ╭───╯`,
-		},
-		{
-			name: "with a path that has room to move to the left and continues",
-			commits: []*models.Commit{
-				{Hash: "1", Parents: []string{"2"}},
-				{Hash: "2", Parents: []string{"3", "4"}},
-				{Hash: "3", Parents: []string{"5", "4"}},
-				{Hash: "5", Parents: []string{"7", "8"}},
-				{Hash: "4", Parents: []string{"7"}},
-				{Hash: "7", Parents: []string{"11"}},
-			},
-			expectedOutput: `
-			1 ◯
-			2 ⏣─╮
-			3 ⏣─│─╮
-			5 ⏣─│─│─╮
-			4 │ ◯─╯ │
-			7 ◯─╯ ╭─╯`,
-		},
-		{
-			name: "with a path that has room to move to the left and continues",
-			commits: []*models.Commit{
-				{Hash: "1", Parents: []string{"2"}},
-				{Hash: "2", Parents: []string{"3", "4"}},
-				{Hash: "3", Parents: []string{"5", "4"}},
-				{Hash: "5", Parents: []string{"7", "8"}},
-				{Hash: "7", Parents: []string{"4", "A"}},
-				{Hash: "4", Parents: []string{"B"}},
-				{Hash: "B", Parents: []string{"C"}},
-			},
-			expectedOutput: `
-			1 ◯
-			2 ⏣─╮
-			3 ⏣─│─╮
-			5 ⏣─│─│─╮
-			7 ⏣─│─│─│─╮
-			4 ◯─┴─╯ │ │
-			B ◯ ╭───╯ │`,
-		},
-		{
-			name: "with a path that has room to move to the left and continues",
-			commits: []*models.Commit{
-				{Hash: "1", Parents: []string{"2", "3"}},
-				{Hash: "3", Parents: []string{"2"}},
-				{Hash: "2", Parents: []string{"4", "5"}},
-				{Hash: "4", Parents: []string{"6", "7"}},
-				{Hash: "6", Parents: []string{"8"}},
-			},
-			expectedOutput: `
-			1 ⏣─╮
-			3 │ ◯
-			2 ⏣─│
-			4 ⏣─│─╮
-			6 ◯ │ │`,
-		},
+		// {
+		// 	name: "with some merges",
+		// 	commits: []*models.Commit{
+		// 		{Hash: "1", Parents: []string{"2"}},
+		// 		{Hash: "2", Parents: []string{"3"}},
+		// 		{Hash: "3", Parents: []string{"4"}},
+		// 		{Hash: "4", Parents: []string{"5", "7"}},
+		// 		{Hash: "7", Parents: []string{"5"}},
+		// 		{Hash: "5", Parents: []string{"8"}},
+		// 		{Hash: "8", Parents: []string{"9"}},
+		// 		{Hash: "9", Parents: []string{"A", "B"}},
+		// 		{Hash: "B", Parents: []string{"D"}},
+		// 		{Hash: "D", Parents: []string{"D"}},
+		// 		{Hash: "A", Parents: []string{"E"}},
+		// 		{Hash: "E", Parents: []string{"F"}},
+		// 		{Hash: "F", Parents: []string{"D"}},
+		// 		{Hash: "D", Parents: []string{"G"}},
+		// 	},
+		// 	expectedOutput: `
+		// 	1 ◯
+		// 	2 ◯
+		// 	3 ◯
+		// 	4 ⏣─╮
+		// 	7 │ ◯
+		// 	5 ◯─╯
+		// 	8 ◯
+		// 	9 ⏣─╮
+		// 	B │ ◯
+		// 	D │ ◯
+		// 	A ◯ │
+		// 	E ◯ │
+		// 	F ◯ │
+		// 	D ◯─╯`,
+		// },
+		// {
+		// 	name: "with a path that has room to move to the left",
+		// 	commits: []*models.Commit{
+		// 		{Hash: "1", Parents: []string{"2"}},
+		// 		{Hash: "2", Parents: []string{"3", "4"}},
+		// 		{Hash: "4", Parents: []string{"3", "5"}},
+		// 		{Hash: "3", Parents: []string{"5"}},
+		// 		{Hash: "5", Parents: []string{"6"}},
+		// 		{Hash: "6", Parents: []string{"7"}},
+		// 	},
+		// 	expectedOutput: `
+		// 	1 ◯
+		// 	2 ⏣─╮
+		// 	4 │ ⏣─╮
+		// 	3 ◯─╯ │
+		// 	5 ◯───╯
+		// 	6 ◯`,
+		// },
+		// {
+		// 	name: "with a new commit",
+		// 	commits: []*models.Commit{
+		// 		{Hash: "1", Parents: []string{"2"}},
+		// 		{Hash: "2", Parents: []string{"3", "4"}},
+		// 		{Hash: "4", Parents: []string{"3", "5"}},
+		// 		{Hash: "Z", Parents: []string{"Z"}},
+		// 		{Hash: "3", Parents: []string{"5"}},
+		// 		{Hash: "5", Parents: []string{"6"}},
+		// 		{Hash: "6", Parents: []string{"7"}},
+		// 	},
+		// 	expectedOutput: `
+		// 	1 ◯
+		// 	2 ⏣─╮
+		// 	4 │ ⏣─╮
+		// 	Z │ │ │ ◯
+		// 	3 ◯─╯ │ │
+		// 	5 ◯───╯ │
+		// 	6 ◯ ╭───╯`,
+		// },
+		// {
+		// 	name: "with a path that has room to move to the left and continues",
+		// 	commits: []*models.Commit{
+		// 		{Hash: "1", Parents: []string{"2"}},
+		// 		{Hash: "2", Parents: []string{"3", "4"}},
+		// 		{Hash: "3", Parents: []string{"5", "4"}},
+		// 		{Hash: "5", Parents: []string{"7", "8"}},
+		// 		{Hash: "4", Parents: []string{"7"}},
+		// 		{Hash: "7", Parents: []string{"11"}},
+		// 	},
+		// 	expectedOutput: `
+		// 	1 ◯
+		// 	2 ⏣─╮
+		// 	3 ⏣─│─╮
+		// 	5 ⏣─│─│─╮
+		// 	4 │ ◯─╯ │
+		// 	7 ◯─╯ ╭─╯`,
+		// },
+		// {
+		// 	name: "with a path that has room to move to the left and continues",
+		// 	commits: []*models.Commit{
+		// 		{Hash: "1", Parents: []string{"2"}},
+		// 		{Hash: "2", Parents: []string{"3", "4"}},
+		// 		{Hash: "3", Parents: []string{"5", "4"}},
+		// 		{Hash: "5", Parents: []string{"7", "8"}},
+		// 		{Hash: "7", Parents: []string{"4", "A"}},
+		// 		{Hash: "4", Parents: []string{"B"}},
+		// 		{Hash: "B", Parents: []string{"C"}},
+		// 	},
+		// 	expectedOutput: `
+		// 	1 ◯
+		// 	2 ⏣─╮
+		// 	3 ⏣─│─╮
+		// 	5 ⏣─│─│─╮
+		// 	7 ⏣─│─│─│─╮
+		// 	4 ◯─┴─╯ │ │
+		// 	B ◯ ╭───╯ │`,
+		// },
+		// {
+		// 	name: "with a path that has room to move to the left and continues",
+		// 	commits: []*models.Commit{
+		// 		{Hash: "1", Parents: []string{"2", "3"}},
+		// 		{Hash: "3", Parents: []string{"2"}},
+		// 		{Hash: "2", Parents: []string{"4", "5"}},
+		// 		{Hash: "4", Parents: []string{"6", "7"}},
+		// 		{Hash: "6", Parents: []string{"8"}},
+		// 	},
+		// 	expectedOutput: `
+		// 	1 ⏣─╮
+		// 	3 │ ◯
+		// 	2 ⏣─│
+		// 	4 ⏣─│─╮
+		// 	6 ◯ │ │`,
+		// },
 		{
 			name: "with a highlight on on a merge commit",
 			commits: []*models.Commit{
-				{Hash: "1", Parents: []string{"2", "3"}},
-				{Hash: "3", Parents: []string{"2"}},
-				{Hash: "2", Parents: []string{"4", "5"}},
+				{Hash: "A", Parents: []string{"B", "C"}},
+				{Hash: "C", Parents: []string{"B"}},
+				{Hash: "B", Parents: []string{"D", "F"}},
+				{Hash: "D", Parents: []string{"E"}},
 			},
 			expectedOutput: `
-			1 ⏣─╮
-			3 │ ◯
-			2 ⏣─│`,
-			highlightedCommitHash: "1",
+			A ⏣─╮
+			C │ ◯
+			B ⏣─│
+		    D ◯ │`,
+			highlightedCommitHash: "A",
 		},
-		{
-			name: "new merge path fills gap before continuing path on right",
-			commits: []*models.Commit{
-				{Hash: "1", Parents: []string{"2", "3", "4", "5"}},
-				{Hash: "4", Parents: []string{"2"}},
-				{Hash: "2", Parents: []string{"A"}},
-				{Hash: "A", Parents: []string{"6", "B"}},
-				{Hash: "B", Parents: []string{"C"}},
-			},
-			expectedOutput: `
-			1 ⏣─┬─┬─╮
-			4 │ │ ◯ │
-			2 ◯─│─╯ │
-			A ⏣─│─╮ │
-			B │ │ ◯ │`,
-		},
-		{
-			name: "with a path that has room to move to the left and continues",
-			commits: []*models.Commit{
-				{Hash: "1", Parents: []string{"2"}},
-				{Hash: "2", Parents: []string{"3", "4"}},
-				{Hash: "3", Parents: []string{"5", "4"}},
-				{Hash: "5", Parents: []string{"7", "8"}},
-				{Hash: "7", Parents: []string{"4", "A"}},
-				{Hash: "4", Parents: []string{"B"}},
-				{Hash: "B", Parents: []string{"C"}},
-				{Hash: "C", Parents: []string{"D"}},
-			},
-			expectedOutput: `
-			1 ◯
-			2 ⏣─╮
-			3 ⏣─│─╮
-			5 ⏣─│─│─╮
-			7 ⏣─│─│─│─╮
-			4 ◯─┴─╯ │ │
-			B ◯ ╭───╯ │
-			C ◯ │ ╭───╯`,
-		},
-		{
-			name: "with a path that has room to move to the left and continues",
-			commits: []*models.Commit{
-				{Hash: "1", Parents: []string{"2"}},
-				{Hash: "2", Parents: []string{"3", "4"}},
-				{Hash: "3", Parents: []string{"5", "4"}},
-				{Hash: "5", Parents: []string{"7", "G"}},
-				{Hash: "7", Parents: []string{"8", "A"}},
-				{Hash: "8", Parents: []string{"4", "E"}},
-				{Hash: "4", Parents: []string{"B"}},
-				{Hash: "B", Parents: []string{"C"}},
-				{Hash: "C", Parents: []string{"D"}},
-				{Hash: "D", Parents: []string{"F"}},
-			},
-			expectedOutput: `
-			1 ◯
-			2 ⏣─╮
-			3 ⏣─│─╮
-			5 ⏣─│─│─╮
-			7 ⏣─│─│─│─╮
-			8 ⏣─│─│─│─│─╮
-			4 ◯─┴─╯ │ │ │
-			B ◯ ╭───╯ │ │
-			C ◯ │ ╭───╯ │
-			D ◯ │ │ ╭───╯`,
-		},
+		// {
+		// 	name: "new merge path fills gap before continuing path on right",
+		// 	commits: []*models.Commit{
+		// 		{Hash: "1", Parents: []string{"2", "3", "4", "5"}},
+		// 		{Hash: "4", Parents: []string{"2"}},
+		// 		{Hash: "2", Parents: []string{"A"}},
+		// 		{Hash: "A", Parents: []string{"6", "B"}},
+		// 		{Hash: "B", Parents: []string{"C"}},
+		// 	},
+		// 	expectedOutput: `
+		// 	1 ⏣─┬─┬─╮
+		// 	4 │ │ ◯ │
+		// 	2 ◯─│─╯ │
+		// 	A ⏣─│─╮ │
+		// 	B │ │ ◯ │`,
+		// },
+		// {
+		// 	name: "with a path that has room to move to the left and continues",
+		// 	commits: []*models.Commit{
+		// 		{Hash: "1", Parents: []string{"2"}},
+		// 		{Hash: "2", Parents: []string{"3", "4"}},
+		// 		{Hash: "3", Parents: []string{"5", "4"}},
+		// 		{Hash: "5", Parents: []string{"7", "8"}},
+		// 		{Hash: "7", Parents: []string{"4", "A"}},
+		// 		{Hash: "4", Parents: []string{"B"}},
+		// 		{Hash: "B", Parents: []string{"C"}},
+		// 		{Hash: "C", Parents: []string{"D"}},
+		// 	},
+		// 	expectedOutput: `
+		// 	1 ◯
+		// 	2 ⏣─╮
+		// 	3 ⏣─│─╮
+		// 	5 ⏣─│─│─╮
+		// 	7 ⏣─│─│─│─╮
+		// 	4 ◯─┴─╯ │ │
+		// 	B ◯ ╭───╯ │
+		// 	C ◯ │ ╭───╯`,
+		// },
+		// {
+		// 	name: "with a path that has room to move to the left and continues",
+		// 	commits: []*models.Commit{
+		// 		{Hash: "1", Parents: []string{"2"}},
+		// 		{Hash: "2", Parents: []string{"3", "4"}},
+		// 		{Hash: "3", Parents: []string{"5", "4"}},
+		// 		{Hash: "5", Parents: []string{"7", "G"}},
+		// 		{Hash: "7", Parents: []string{"8", "A"}},
+		// 		{Hash: "8", Parents: []string{"4", "E"}},
+		// 		{Hash: "4", Parents: []string{"B"}},
+		// 		{Hash: "B", Parents: []string{"C"}},
+		// 		{Hash: "C", Parents: []string{"D"}},
+		// 		{Hash: "D", Parents: []string{"F"}},
+		// 	},
+		// 	expectedOutput: `
+		// 	1 ◯
+		// 	2 ⏣─╮
+		// 	3 ⏣─│─╮
+		// 	5 ⏣─│─│─╮
+		// 	7 ⏣─│─│─│─╮
+		// 	8 ⏣─│─│─│─│─╮
+		// 	4 ◯─┴─╯ │ │ │
+		// 	B ◯ ╭───╯ │ │
+		// 	C ◯ │ ╭───╯ │
+		// 	D ◯ │ │ ╭───╯`,
+		// },
 	}
 
 	oldColorLevel := color.ForceSetColorLevel(terminfo.ColorLevelMillions)

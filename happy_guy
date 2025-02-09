@@ -1,0 +1,27 @@
+All pipes in set
+Pipe: Pipe{from: 0 (START) -> to: 0 (A), kind: Terminates }
+Pipe: Pipe{from: 0 (A) -> to: 0 (B), kind: Starts }
+Pipe: Pipe{from: 0 (A) -> to: 1 (C), kind: Starts }
+&{false true false true 2 {false false false false} [39]}}
+&{false true true false 0 <nil> {{false false false false} [39]}}
+All pipes in set
+Pipe: Pipe{from: 0 (A) -> to: 0 (B), kind: Continues }
+Pipe: Pipe{from: 1 (A) -> to: 1 (C), kind: Terminates }
+Pipe: Pipe{from: 1 (C) -> to: 1 (B), kind: Starts }
+&{true true false false 0 <nil> {{false false false false} [39]}}
+&{false true false false 1 <nil> {{false false false false} [39]}}
+  up    down  left right
+All pipes in set
+Pipe: Pipe{from: 0 (A) -> to: 0 (B), kind: Terminates }
+Pipe: Pipe{from: 1 (C) -> to: 0 (B), kind: Terminates }
+Pipe: Pipe{from: 0 (B) -> to: 0 (D), kind: Starts }
+Pipe: Pipe{from: 0 (B) -> to: 1 (F), kind: Starts }
+&{false true false true 2 {false false false false} [39]}}
+  up    down  left right
+&{true true true false 0 <nil> {{false false false false} [39]}}
+All pipes in set
+Pipe: Pipe{from: 0 (B) -> to: 0 (D), kind: Terminates }
+Pipe: Pipe{from: 0 (D) -> to: 0 (E), kind: Starts }
+Pipe: Pipe{from: 1 (B) -> to: 1 (F), kind: Continues }
+&{false true false false 1 <nil> {{false false false false} [39]}}
+&{true true false false 0 <nil> {{false false false false} [39]}}

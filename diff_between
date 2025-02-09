@@ -1,0 +1,37 @@
+happy -----------
+All pipes in set
+Pipe: Pipe{from: 0 (A) -> to: 0 (B), kind: Terminates }
+Pipe: Pipe{from: 1 (C) -> to: 0 (B), kind: Terminates }
+Pipe: Pipe{from: 0 (B) -> to: 0 (D), kind: Starts }
+Pipe: Pipe{from: 0 (B) -> to: 1 (F), kind: Starts }
+&{false true false true 2 {false false false false} [39]}}
+  up    down  left right
+&{true true true false 0 <nil> {{false false false false} [39]}}
+
+unhappy --------
+All pipes in set
+Pipe: Pipe{from: 0 (A) -> to: 0 (B), kind: Terminates }
+Pipe: Pipe{from: 1 (C) -> to: 0 (B), kind: Terminates }
+Pipe: Pipe{from: 0 (B) -> to: 0 (D), kind: Starts }
+Pipe: Pipe{from: 0 (B) -> to: 1 (F), kind: Starts }
+&{true false false false 2 {false false false false} [39]}}
+  up    down  left right
+&{true true true false 0 <nil> {{false false false false} [39]}}
+
+longer-logs
+our maxPos is 1
+All pipes in set
+Pipe: Pipe{from: 0 (A) -> to: 0 (B), kind: Terminates }
+Pipe: Pipe{from: 1 (C) -> to: 0 (B), kind: Terminates }
+Pipe: Pipe{from: 0 (B) -> to: 0 (D), kind: Starts }
+Pipe: Pipe{from: 0 (B) -> to: 1 (F), kind: Starts }
+Selected pipes
+Pipe: Pipe{from: 0 (A) -> to: 0 (B), kind: Terminates }
+Nonselected pipes
+Pipe: Pipe{from: 1 (C) -> to: 0 (B), kind: Terminates }
+Pipe: Pipe{from: 0 (B) -> to: 0 (D), kind: Starts }
+Pipe: Pipe{from: 0 (B) -> to: 1 (F), kind: Starts }
+pipe Pipe{from: 0 (B) -> to: 1 (F), kind: Starts } is setting left to right
+pipe Pipe{from: 1 (C) -> to: 0 (B), kind: Terminates } is setting left to right
+&{true false false false 2 0xc000246060 {0xc00002c7a0 <nil> {true false false false} [97 1]}}
+&{true true true false 0 <nil> {0xc00002c830 <nil> {false false false false} [39]}}
