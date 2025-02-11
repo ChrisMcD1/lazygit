@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -241,6 +242,16 @@ func migrateUserConfig(path string, content []byte) ([]byte, error) {
 		return nil, fmt.Errorf("Couldn't migrate config file at `%s`: %s", path, err)
 	}
 
+	changedContent, err = changeElementToSequence(changedContent, "git.commitPrefix")
+	if err != nil {
+		return nil, fmt.Errorf("Couldn't migrate config file at `%s`: %s", path, err)
+	}
+
+	changedContent, err = changeCommitPrefixesMap(changedContent)
+	if err != nil {
+		return nil, fmt.Errorf("Couldn't migrate config file at `%s`: %s", path, err)
+	}
+
 	// Add more migrations here...
 
 	// Write config back if changed
@@ -261,6 +272,45 @@ func changeNullKeybindingsToDisabled(changedContent []byte) ([]byte, error) {
 		if strings.HasPrefix(path, "keybinding.") && node.Kind == yaml.ScalarNode && node.Tag == "!!null" {
 			node.Value = "<disabled>"
 			node.Tag = "!!str"
+			return true
+		}
+		return false
+	})
+}
+
+func changeElementToSequence(changedContent []byte, targetPath string) ([]byte, error) {
+	return yaml_utils.Walk(changedContent, func(node *yaml.Node, path string) bool {
+		if path == targetPath && node.Kind == yaml.MappingNode {
+			nodeContentCopy := node.Content
+			node.Kind = yaml.SequenceNode
+			node.Value = ""
+			node.Tag = "tag:yaml.org,2002:seq"
+			node.Content = []*yaml.Node{{
+				Kind:    yaml.MappingNode,
+				Content: nodeContentCopy,
+			}}
+
+			return true
+		}
+		return false
+	})
+}
+
+func changeCommitPrefixesMap(changedContent []byte) ([]byte, error) {
+	positiveRegex := regexp.MustCompile(`^git\.commitPrefixes\..+$`)
+	return yaml_utils.Walk(changedContent, func(node *yaml.Node, path string) bool {
+		// Checking Column == 13 ensures that we are on the 3rd indented element. Even if the input yaml has 2 space indentation, the parser has turned it into 4 now
+		if positiveRegex.FindStringIndex(path) != nil && node.Column == 13 && node.Kind == yaml.MappingNode {
+			fmt.Println("Found a positiveRegex at column", node.Column)
+			nodeContentCopy := node.Content
+			node.Kind = yaml.SequenceNode
+			node.Value = ""
+			node.Tag = "tag:yaml.org,2002:seq"
+			node.Content = []*yaml.Node{{
+				Kind:    yaml.MappingNode,
+				Content: nodeContentCopy,
+			}}
+
 			return true
 		}
 		return false
