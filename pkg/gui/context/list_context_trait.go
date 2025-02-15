@@ -30,12 +30,14 @@ func (self *ListContextTrait) FocusLine() {
 	// resized before we focus the line, otherwise if we're in accordion mode
 	// the view could be squashed and won't how to adjust the cursor/origin.
 	// Also, refreshing the viewport needs to happen after the view has been resized.
+	self.c.IGuiCommon.LogAction(fmt.Sprintf("Registering FocusLine on context %v", self.c))
 	self.c.AfterLayout(func() error {
 		oldOrigin, _ := self.GetViewTrait().ViewPortYBounds()
 
 		self.GetViewTrait().FocusPoint(
 			self.ModelIndexToViewIndex(self.list.GetSelectedLineIdx()))
 
+		self.c.IGuiCommon.LogAction(fmt.Sprintf("SetFocusPoint to index %d n context %v", self.list.GetSelectedLineIdx(), self.c))
 		selectRangeIndex, isSelectingRange := self.list.GetRangeStartIdx()
 		if isSelectingRange {
 			selectRangeIndex = self.ModelIndexToViewIndex(selectRangeIndex)
@@ -45,13 +47,16 @@ func (self *ListContextTrait) FocusLine() {
 		}
 
 		if self.refreshViewportOnChange {
+			self.c.IGuiCommon.LogAction("Refresh Viewpoint")
 			self.refreshViewport()
 		} else if self.renderOnlyVisibleLines {
+			self.c.IGuiCommon.LogAction("Render Visible Lines")
 			newOrigin, _ := self.GetViewTrait().ViewPortYBounds()
 			if oldOrigin != newOrigin {
 				self.HandleRender()
 			}
 		}
+		self.c.IGuiCommon.LogAction("Finished AfterLayout")
 		return nil
 	})
 

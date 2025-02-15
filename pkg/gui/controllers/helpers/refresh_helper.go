@@ -490,6 +490,10 @@ func (self *RefreshHelper) refreshBranches(refreshWorktrees bool, keepBranchSele
 		self.c.Log.Error(err)
 	}
 
+	self.c.IGuiCommon.LogAction(fmt.Sprintf("Setting new branches"))
+	for _, branch := range branches {
+		self.c.IGuiCommon.LogAction(fmt.Sprintf("New branch is %v", branch))
+	}
 	self.c.Model().Branches = branches
 
 	if refreshWorktrees {
