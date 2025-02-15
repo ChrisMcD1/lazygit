@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -449,6 +450,12 @@ func (self *RefreshHelper) refreshBranches(refreshWorktrees bool, keepBranchSele
 
 	prevSelectedBranch := self.c.Contexts().Branches.GetSelected()
 
+	self.c.IGuiCommon.LogAction(fmt.Sprintf("Our preev selected branch is %v", prevSelectedBranch))
+	branches := self.c.Contexts().Branches.GetItems()
+	for _, branch := range branches {
+		self.c.IGuiCommon.LogAction(fmt.Sprintf("One branch is %v", branch))
+	}
+
 	reflogCommits := self.c.Model().FilteredReflogCommits
 	if self.c.Modes().Filtering.Active() && self.c.AppState.LocalBranchSortOrder == "recency" {
 		// in filter mode we filter our reflog commits to just those containing the path
@@ -496,9 +503,12 @@ func (self *RefreshHelper) refreshBranches(refreshWorktrees bool, keepBranchSele
 		_, idx, found := lo.FindIndexOf(self.c.Contexts().Branches.GetItems(),
 			func(b *models.Branch) bool { return b.Name == prevSelectedBranch.Name })
 		if found {
+			self.c.IGuiCommon.LogAction(fmt.Sprintf("Found branch with name at %d", idx))
 			self.c.Contexts().Branches.SetSelectedLineIdx(idx)
 		}
 	}
+
+	// self.refreshView(self.c.Contexts().Branches)
 
 	// Need to re-render the commits view because the visualization of local
 	// branch heads might have changed
