@@ -751,20 +751,9 @@ func (self *BranchesController) createPullRequestMenu(selectedBranch *models.Bra
 						return errors.New(self.c.Tr.PullRequestNoUpstream)
 					}
 
-					if len(self.c.Model().Remotes) == 1 {
-						toRemote := self.c.Model().Remotes[0].Name
-						self.c.Log.Debugf("PR will target the only existing remote '%s'", toRemote)
-						return self.promptForTargetBranchNameAndCreatePullRequest(branch, toRemote)
-					}
-
-					self.c.Prompt(types.PromptOpts{
-						Title:               self.c.Tr.SelectTargetRemote,
-						FindSuggestionsFunc: self.c.Helpers().Suggestions.GetRemoteSuggestionsFunc(),
-						HandleConfirm: func(toRemote string) error {
-							self.c.Log.Debugf("PR will target remote '%s'", toRemote)
-
-							return self.promptForTargetBranchNameAndCreatePullRequest(branch, toRemote)
-						},
+					self.c.Helpers().Upstream.PromptForUpstream("", func(upstream helpers.Upstream) error {
+						self.c.Log.Debugf("PR will target branch '%s' on remote '%s'", upstream.Branch, upstream.Remote)
+						return self.createPullRequest(branch.UpstreamBranch, upstream.Branch)
 					})
 
 					return nil
@@ -791,26 +780,6 @@ func (self *BranchesController) createPullRequestMenu(selectedBranch *models.Bra
 	menuItems = append(menuItems, menuItemsForBranch(selectedBranch)...)
 
 	return self.c.Menu(types.CreateMenuOptions{Title: fmt.Sprint(self.c.Tr.CreatePullRequestOptions), Items: menuItems})
-}
-
-func (self *BranchesController) promptForTargetBranchNameAndCreatePullRequest(fromBranch *models.Branch, toRemote string) error {
-	remoteDoesNotExist := lo.NoneBy(self.c.Model().Remotes, func(remote *models.Remote) bool {
-		return remote.Name == toRemote
-	})
-	if remoteDoesNotExist {
-		return fmt.Errorf(self.c.Tr.NoValidRemoteName, toRemote)
-	}
-
-	self.c.Prompt(types.PromptOpts{
-		Title:               fmt.Sprintf("%s → %s/", fromBranch.UpstreamBranch, toRemote),
-		FindSuggestionsFunc: self.c.Helpers().Suggestions.GetRemoteBranchesForRemoteSuggestionsFunc(toRemote),
-		HandleConfirm: func(toBranch string) error {
-			self.c.Log.Debugf("PR will target branch '%s' on remote '%s'", toBranch, toRemote)
-			return self.createPullRequest(fromBranch.UpstreamBranch, toBranch)
-		},
-	})
-
-	return nil
 }
 
 func (self *BranchesController) createPullRequest(from string, to string) error {

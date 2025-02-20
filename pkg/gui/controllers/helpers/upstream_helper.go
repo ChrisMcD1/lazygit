@@ -37,13 +37,13 @@ type Upstream struct {
 
 func (self *UpstreamHelper) promptForUpstreamBranch(chosenRemote string, initialBranch string, onConfirm func(Upstream) error) error {
 	self.c.Log.Debugf("User selected remote '%s'", chosenRemote)
-
 	remoteDoesNotExist := lo.NoneBy(self.c.Model().Remotes, func(remote *models.Remote) bool {
 		return remote.Name == chosenRemote
 	})
 	if remoteDoesNotExist {
 		return fmt.Errorf(self.c.Tr.NoValidRemoteName, chosenRemote)
 	}
+
 	self.c.Prompt(types.PromptOpts{
 		Title:               fmt.Sprintf("Targeting remote %s", chosenRemote),
 		InitialContent:      initialBranch,
@@ -58,8 +58,9 @@ func (self *UpstreamHelper) promptForUpstreamBranch(chosenRemote string, initial
 
 func (self *UpstreamHelper) PromptForUpstream(suggestedBranch string, onConfirm func(Upstream) error) error {
 	if len(self.c.Model().Remotes) == 1 {
-		remote := self.c.Model().Remotes[0]
-		return self.promptForUpstreamBranch(remote.Name, suggestedBranch, onConfirm)
+		remote := self.c.Model().Remotes[0].Name
+		self.c.Log.Debugf("Defaulting to only remote %s", remote)
+		return self.promptForUpstreamBranch(remote, suggestedBranch, onConfirm)
 	} else {
 		suggestedRemote := getSuggestedRemote(self.c.Model().Remotes)
 		self.c.Prompt(types.PromptOpts{
