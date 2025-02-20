@@ -273,7 +273,7 @@ func (self *BranchesController) viewUpstreamOptions(selectedBranch *models.Branc
 	setUpstreamItem := &types.MenuItem{
 		LabelColumns: []string{self.c.Tr.SetUpstream},
 		OnPress: func() error {
-			return self.c.Helpers().Upstream.PromptForUpstream(helpers.Upstream{}, func(upstream helpers.Upstream) error {
+			return self.c.Helpers().Upstream.PromptForUpstream("", func(upstream helpers.Upstream) error {
 				if err := self.c.Git().Branch.SetUpstream(upstream.Remote, upstream.Branch, selectedBranch.Name); err != nil {
 					return err
 				}

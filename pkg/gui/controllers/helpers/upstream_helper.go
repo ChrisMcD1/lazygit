@@ -15,8 +15,7 @@ type UpstreamHelper struct {
 }
 
 type IUpstreamHelper interface {
-	PromptForUpstreamBranch(chosenRemote string, initialBranch string, onConfirm func(Upstream) error) error
-	PromptForUpstream(initialContent Upstream, onConfirm func(Upstream) error) error
+	PromptForUpstream(suggestedBranch string, onConfirm func(Upstream) error) error
 }
 
 var _ IUpstreamHelper = &UpstreamHelper{}
@@ -36,7 +35,7 @@ type Upstream struct {
 	Branch string
 }
 
-func (self *UpstreamHelper) PromptForUpstreamBranch(chosenRemote string, initialBranch string, onConfirm func(Upstream) error) error {
+func (self *UpstreamHelper) promptForUpstreamBranch(chosenRemote string, initialBranch string, onConfirm func(Upstream) error) error {
 	self.c.Log.Debugf("User selected remote '%s'", chosenRemote)
 
 	remoteDoesNotExist := lo.NoneBy(self.c.Model().Remotes, func(remote *models.Remote) bool {
@@ -57,10 +56,10 @@ func (self *UpstreamHelper) PromptForUpstreamBranch(chosenRemote string, initial
 	return nil
 }
 
-func (self *UpstreamHelper) PromptForUpstream(initialContent Upstream, onConfirm func(Upstream) error) error {
+func (self *UpstreamHelper) PromptForUpstream(suggestedBranch string, onConfirm func(Upstream) error) error {
 	if len(self.c.Model().Remotes) == 1 {
 		remote := self.c.Model().Remotes[0]
-		return self.PromptForUpstreamBranch(remote.Name, initialContent.Branch, onConfirm)
+		return self.promptForUpstreamBranch(remote.Name, suggestedBranch, onConfirm)
 	} else {
 		suggestedRemote := getSuggestedRemote(self.c.Model().Remotes)
 		self.c.Prompt(types.PromptOpts{
@@ -68,7 +67,7 @@ func (self *UpstreamHelper) PromptForUpstream(initialContent Upstream, onConfirm
 			InitialContent:      suggestedRemote,
 			FindSuggestionsFunc: self.suggestions.GetRemoteSuggestionsFunc(),
 			HandleConfirm: func(toRemote string) error {
-				return self.PromptForUpstreamBranch(toRemote, initialContent.Branch, onConfirm)
+				return self.promptForUpstreamBranch(toRemote, suggestedBranch, onConfirm)
 			},
 		})
 	}
