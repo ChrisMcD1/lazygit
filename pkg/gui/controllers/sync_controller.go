@@ -122,7 +122,7 @@ func (self *SyncController) pull(currentBranch *models.Branch) error {
 
 	// if we have no upstream branch we need to set that first
 	if !currentBranch.IsTrackingRemote() {
-		return self.c.Helpers().Upstream.PromptForUpstreamWithInitialContent(currentBranch, func(upstream helpers.Upstream) error {
+		return self.c.Helpers().Upstream.PromptForUpstream(helpers.Upstream{Branch: currentBranch.Name}, func(upstream helpers.Upstream) error {
 			if err := self.setCurrentBranchUpstream(upstream); err != nil {
 				return err
 			}
