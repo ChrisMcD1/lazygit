@@ -11,6 +11,7 @@ import (
 	"github.com/jesseduffield/lazygit/pkg/gui/context"
 	"github.com/jesseduffield/lazygit/pkg/gui/types"
 	"github.com/jesseduffield/lazygit/pkg/utils"
+	"github.com/samber/lo"
 )
 
 type SyncController struct {
@@ -99,18 +100,54 @@ func (self *SyncController) push(currentBranch *models.Branch) error {
 		if self.c.Git().Config.GetPushToCurrent() {
 			return self.pushAux(currentBranch, pushOpts{setUpstream: true})
 		} else {
-			return self.c.Helpers().Upstream.PromptForUpstreamWithInitialContent(currentBranch, func(upstream string) error {
-				upstreamRemote, upstreamBranch, err := self.c.Helpers().Upstream.ParseUpstream(upstream)
-				if err != nil {
-					return err
-				}
+			if len(self.c.Model().Remotes) == 1 {
+				return self.c.Helpers().Upstream.PromptForUpstreamWithInitialContent(currentBranch, func(upstream string) error {
+					upstreamRemote, upstreamBranch, err := self.c.Helpers().Upstream.ParseUpstream(upstream)
+					if err != nil {
+						return err
+					}
 
-				return self.pushAux(currentBranch, pushOpts{
-					setUpstream:    true,
-					upstreamRemote: upstreamRemote,
-					upstreamBranch: upstreamBranch,
+					return self.pushAux(currentBranch, pushOpts{
+						setUpstream:    true,
+						upstreamRemote: upstreamRemote,
+						upstreamBranch: upstreamBranch,
+					})
 				})
+			}
+
+			self.c.Prompt(types.PromptOpts{
+				Title: self.c.Tr.SelectTargetRemote,
+				// InitialContent:      self.c.Helpers().Upstream.GetSuggestedRemote(),
+				FindSuggestionsFunc: self.c.Helpers().Suggestions.GetRemoteSuggestionsFunc(),
+				HandleConfirm: func(toRemote string) error {
+					self.c.Log.Debugf("Push will target remote '%s'", toRemote)
+
+					remoteDoesNotExist := lo.NoneBy(self.c.Model().Remotes, func(remote *models.Remote) bool {
+						return remote.Name == toRemote
+					})
+					if remoteDoesNotExist {
+						return fmt.Errorf(self.c.Tr.NoValidRemoteName, toRemote)
+					}
+
+					self.c.Prompt(types.PromptOpts{
+						Title:               fmt.Sprintf("Pushing to remote %s", toRemote),
+						InitialContent:      currentBranch.Name,
+						FindSuggestionsFunc: self.c.Helpers().Suggestions.GetRemoteBranchesForRemoteSuggestionsFunc(toRemote),
+						HandleConfirm: func(toBranch string) error {
+							self.c.Log.Debugf("Push will target branch '%s' on remote '%s'", toBranch, toRemote)
+							return self.pushAux(currentBranch, pushOpts{
+								setUpstream:    true,
+								upstreamRemote: toRemote,
+								upstreamBranch: toBranch,
+							})
+						},
+					})
+					return nil
+				},
 			})
+
+			return nil
+
 		}
 	}
 }
