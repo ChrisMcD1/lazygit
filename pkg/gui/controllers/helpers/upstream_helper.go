@@ -1,75 +1,79 @@
 package helpers
 
 import (
-	"errors"
-	"strings"
+	"fmt"
 
 	"github.com/jesseduffield/lazygit/pkg/commands/models"
 	"github.com/jesseduffield/lazygit/pkg/gui/types"
+	"github.com/samber/lo"
 )
 
 type UpstreamHelper struct {
 	c *HelperCommon
 
-	getRemoteBranchesSuggestionsFunc func(string) func(string) []*types.Suggestion
+	suggestions *SuggestionsHelper
 }
 
 type IUpstreamHelper interface {
-	ParseUpstream(string) (string, string, error)
-	PromptForUpstreamWithInitialContent(*models.Branch, func(string) error) error
-	PromptForUpstreamWithoutInitialContent(*models.Branch, func(string) error) error
-	GetSuggestedRemote() string
+	PromptForUpstream(suggestedBranch string, onConfirm func(Upstream) error) error
 }
 
 var _ IUpstreamHelper = &UpstreamHelper{}
 
 func NewUpstreamHelper(
 	c *HelperCommon,
-	getRemoteBranchesSuggestionsFunc func(string) func(string) []*types.Suggestion,
+	suggestions *SuggestionsHelper,
 ) *UpstreamHelper {
 	return &UpstreamHelper{
-		c:                                c,
-		getRemoteBranchesSuggestionsFunc: getRemoteBranchesSuggestionsFunc,
+		c:           c,
+		suggestions: suggestions,
 	}
 }
 
-func (self *UpstreamHelper) ParseUpstream(upstream string) (string, string, error) {
-	var upstreamBranch, upstreamRemote string
-	split := strings.Split(upstream, " ")
-	if len(split) != 2 {
-		return "", "", errors.New(self.c.Tr.InvalidUpstream)
-	}
-
-	upstreamRemote = split[0]
-	upstreamBranch = split[1]
-
-	return upstreamRemote, upstreamBranch, nil
+type Upstream struct {
+	Remote string
+	Branch string
 }
 
-func (self *UpstreamHelper) promptForUpstream(initialContent string, onConfirm func(string) error) error {
-	self.c.Prompt(types.PromptOpts{
-		Title:               self.c.Tr.EnterUpstream,
-		InitialContent:      initialContent,
-		FindSuggestionsFunc: self.getRemoteBranchesSuggestionsFunc(" "),
-		HandleConfirm:       onConfirm,
+func (self *UpstreamHelper) promptForUpstreamBranch(chosenRemote string, initialBranch string, onConfirm func(Upstream) error) error {
+	self.c.Log.Debugf("User selected remote '%s'", chosenRemote)
+	remoteDoesNotExist := lo.NoneBy(self.c.Model().Remotes, func(remote *models.Remote) bool {
+		return remote.Name == chosenRemote
 	})
+	if remoteDoesNotExist {
+		return fmt.Errorf(self.c.Tr.NoValidRemoteName, chosenRemote)
+	}
 
+	self.c.Prompt(types.PromptOpts{
+		Title:               fmt.Sprintf("Targeting remote %s", chosenRemote),
+		InitialContent:      initialBranch,
+		FindSuggestionsFunc: self.suggestions.GetRemoteBranchesForRemoteSuggestionsFunc(chosenRemote),
+		HandleConfirm: func(chosenBranch string) error {
+			self.c.Log.Debugf("User selected branch '%s' on remote '%s'", chosenRemote, chosenBranch)
+			return onConfirm(Upstream{chosenRemote, chosenBranch})
+		},
+	})
 	return nil
 }
 
-func (self *UpstreamHelper) PromptForUpstreamWithInitialContent(currentBranch *models.Branch, onConfirm func(string) error) error {
-	suggestedRemote := self.GetSuggestedRemote()
-	initialContent := suggestedRemote + " " + currentBranch.Name
+func (self *UpstreamHelper) PromptForUpstream(suggestedBranch string, onConfirm func(Upstream) error) error {
+	if len(self.c.Model().Remotes) == 1 {
+		remote := self.c.Model().Remotes[0].Name
+		self.c.Log.Debugf("Defaulting to only remote %s", remote)
+		return self.promptForUpstreamBranch(remote, suggestedBranch, onConfirm)
+	} else {
+		suggestedRemote := getSuggestedRemote(self.c.Model().Remotes)
+		self.c.Prompt(types.PromptOpts{
+			Title:               self.c.Tr.SelectTargetRemote,
+			InitialContent:      suggestedRemote,
+			FindSuggestionsFunc: self.suggestions.GetRemoteSuggestionsFunc(),
+			HandleConfirm: func(toRemote string) error {
+				return self.promptForUpstreamBranch(toRemote, suggestedBranch, onConfirm)
+			},
+		})
+	}
 
-	return self.promptForUpstream(initialContent, onConfirm)
-}
-
-func (self *UpstreamHelper) PromptForUpstreamWithoutInitialContent(_ *models.Branch, onConfirm func(string) error) error {
-	return self.promptForUpstream("", onConfirm)
-}
-
-func (self *UpstreamHelper) GetSuggestedRemote() string {
-	return getSuggestedRemote(self.c.Model().Remotes)
+	return nil
 }
 
 func getSuggestedRemote(remotes []*models.Remote) string {
