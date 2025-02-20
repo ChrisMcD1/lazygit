@@ -58,14 +58,20 @@ func (self *UpstreamHelper) PromptForUpstreamBranch(chosenRemote string, initial
 }
 
 func (self *UpstreamHelper) PromptForUpstream(initialContent Upstream, onConfirm func(Upstream) error) error {
-	self.c.Prompt(types.PromptOpts{
-		Title:               self.c.Tr.SelectTargetRemote,
-		InitialContent:      initialContent.Remote,
-		FindSuggestionsFunc: self.suggestions.GetRemoteSuggestionsFunc(),
-		HandleConfirm: func(toRemote string) error {
-			return self.PromptForUpstreamBranch(toRemote, initialContent.Branch, onConfirm)
-		},
-	})
+	if len(self.c.Model().Remotes) == 1 {
+		remote := self.c.Model().Remotes[0]
+		return self.PromptForUpstreamBranch(remote.Name, initialContent.Branch, onConfirm)
+	} else {
+		suggestedRemote := getSuggestedRemote(self.c.Model().Remotes)
+		self.c.Prompt(types.PromptOpts{
+			Title:               self.c.Tr.SelectTargetRemote,
+			InitialContent:      suggestedRemote,
+			FindSuggestionsFunc: self.suggestions.GetRemoteSuggestionsFunc(),
+			HandleConfirm: func(toRemote string) error {
+				return self.PromptForUpstreamBranch(toRemote, initialContent.Branch, onConfirm)
+			},
+		})
+	}
 
 	return nil
 }

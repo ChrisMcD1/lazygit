@@ -100,19 +100,14 @@ func (self *SyncController) push(currentBranch *models.Branch) error {
 		if self.c.Git().Config.GetPushToCurrent() {
 			return self.pushAux(currentBranch, pushOpts{setUpstream: true})
 		} else {
-			pushSelected := func(upstream helpers.Upstream) error {
-				return self.pushAux(currentBranch, pushOpts{
-					setUpstream:    true,
-					upstreamRemote: upstream.Remote,
-					upstreamBranch: upstream.Branch,
+			return self.c.Helpers().Upstream.PromptForUpstream(helpers.Upstream{Branch: currentBranch.Name},
+				func(upstream helpers.Upstream) error {
+					return self.pushAux(currentBranch, pushOpts{
+						setUpstream:    true,
+						upstreamRemote: upstream.Remote,
+						upstreamBranch: upstream.Branch,
+					})
 				})
-			}
-			if len(self.c.Model().Remotes) == 1 {
-				remote := self.c.Model().Remotes[0]
-				return self.c.Helpers().Upstream.PromptForUpstreamBranch(remote.Name, currentBranch.Name, pushSelected)
-			} else {
-				return self.c.Helpers().Upstream.PromptForUpstream(helpers.Upstream{Branch: currentBranch.Name}, pushSelected)
-			}
 		}
 	}
 }
