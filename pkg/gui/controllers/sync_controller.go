@@ -9,9 +9,9 @@ import (
 	"github.com/jesseduffield/lazygit/pkg/commands/git_commands"
 	"github.com/jesseduffield/lazygit/pkg/commands/models"
 	"github.com/jesseduffield/lazygit/pkg/gui/context"
+	"github.com/jesseduffield/lazygit/pkg/gui/controllers/helpers"
 	"github.com/jesseduffield/lazygit/pkg/gui/types"
 	"github.com/jesseduffield/lazygit/pkg/utils"
-	"github.com/samber/lo"
 )
 
 type SyncController struct {
@@ -100,54 +100,19 @@ func (self *SyncController) push(currentBranch *models.Branch) error {
 		if self.c.Git().Config.GetPushToCurrent() {
 			return self.pushAux(currentBranch, pushOpts{setUpstream: true})
 		} else {
-			if len(self.c.Model().Remotes) == 1 {
-				return self.c.Helpers().Upstream.PromptForUpstreamWithInitialContent(currentBranch, func(upstream string) error {
-					upstreamRemote, upstreamBranch, err := self.c.Helpers().Upstream.ParseUpstream(upstream)
-					if err != nil {
-						return err
-					}
-
-					return self.pushAux(currentBranch, pushOpts{
-						setUpstream:    true,
-						upstreamRemote: upstreamRemote,
-						upstreamBranch: upstreamBranch,
-					})
+			pushSelected := func(upstream helpers.Upstream) error {
+				return self.pushAux(currentBranch, pushOpts{
+					setUpstream:    true,
+					upstreamRemote: upstream.Remote,
+					upstreamBranch: upstream.Branch,
 				})
 			}
-
-			self.c.Prompt(types.PromptOpts{
-				Title: self.c.Tr.SelectTargetRemote,
-				// InitialContent:      self.c.Helpers().Upstream.GetSuggestedRemote(),
-				FindSuggestionsFunc: self.c.Helpers().Suggestions.GetRemoteSuggestionsFunc(),
-				HandleConfirm: func(toRemote string) error {
-					self.c.Log.Debugf("Push will target remote '%s'", toRemote)
-
-					remoteDoesNotExist := lo.NoneBy(self.c.Model().Remotes, func(remote *models.Remote) bool {
-						return remote.Name == toRemote
-					})
-					if remoteDoesNotExist {
-						return fmt.Errorf(self.c.Tr.NoValidRemoteName, toRemote)
-					}
-
-					self.c.Prompt(types.PromptOpts{
-						Title:               fmt.Sprintf("Pushing to remote %s", toRemote),
-						InitialContent:      currentBranch.Name,
-						FindSuggestionsFunc: self.c.Helpers().Suggestions.GetRemoteBranchesForRemoteSuggestionsFunc(toRemote),
-						HandleConfirm: func(toBranch string) error {
-							self.c.Log.Debugf("Push will target branch '%s' on remote '%s'", toBranch, toRemote)
-							return self.pushAux(currentBranch, pushOpts{
-								setUpstream:    true,
-								upstreamRemote: toRemote,
-								upstreamBranch: toBranch,
-							})
-						},
-					})
-					return nil
-				},
-			})
-
-			return nil
-
+			if len(self.c.Model().Remotes) == 1 {
+				remote := self.c.Model().Remotes[0]
+				return self.c.Helpers().Upstream.PromptForUpstreamBranch(remote.Name, currentBranch.Name, pushSelected)
+			} else {
+				return self.c.Helpers().Upstream.PromptForUpstream(helpers.Upstream{Branch: currentBranch.Name}, pushSelected)
+			}
 		}
 	}
 }
@@ -157,7 +122,7 @@ func (self *SyncController) pull(currentBranch *models.Branch) error {
 
 	// if we have no upstream branch we need to set that first
 	if !currentBranch.IsTrackingRemote() {
-		return self.c.Helpers().Upstream.PromptForUpstreamWithInitialContent(currentBranch, func(upstream string) error {
+		return self.c.Helpers().Upstream.PromptForUpstreamWithInitialContent(currentBranch, func(upstream helpers.Upstream) error {
 			if err := self.setCurrentBranchUpstream(upstream); err != nil {
 				return err
 			}
@@ -169,17 +134,12 @@ func (self *SyncController) pull(currentBranch *models.Branch) error {
 	return self.PullAux(currentBranch, PullFilesOptions{Action: action})
 }
 
-func (self *SyncController) setCurrentBranchUpstream(upstream string) error {
-	upstreamRemote, upstreamBranch, err := self.c.Helpers().Upstream.ParseUpstream(upstream)
-	if err != nil {
-		return err
-	}
-
-	if err := self.c.Git().Branch.SetCurrentBranchUpstream(upstreamRemote, upstreamBranch); err != nil {
+func (self *SyncController) setCurrentBranchUpstream(upstream helpers.Upstream) error {
+	if err := self.c.Git().Branch.SetCurrentBranchUpstream(upstream.Remote, upstream.Branch); err != nil {
 		if strings.Contains(err.Error(), "does not exist") {
 			return fmt.Errorf(
 				"upstream branch %s/%s not found.\nIf you expect it to exist, you should fetch (with 'f').\nOtherwise, you should push (with 'shift+P')",
-				upstreamRemote, upstreamBranch,
+				upstream.Remote, upstream.Branch,
 			)
 		}
 		return err

@@ -1,23 +1,22 @@
 package helpers
 
 import (
-	"errors"
-	"strings"
+	"fmt"
 
 	"github.com/jesseduffield/lazygit/pkg/commands/models"
 	"github.com/jesseduffield/lazygit/pkg/gui/types"
+	"github.com/samber/lo"
 )
 
 type UpstreamHelper struct {
 	c *HelperCommon
 
-	getRemoteBranchesSuggestionsFunc func(string) func(string) []*types.Suggestion
+	suggestions *SuggestionsHelper
 }
 
 type IUpstreamHelper interface {
-	ParseUpstream(string) (string, string, error)
-	PromptForUpstreamWithInitialContent(*models.Branch, func(string) error) error
-	PromptForUpstreamWithoutInitialContent(*models.Branch, func(string) error) error
+	PromptForUpstreamWithInitialContent(*models.Branch, func(Upstream) error) error
+	PromptForUpstreamWithoutInitialContent(func(Upstream) error) error
 	GetSuggestedRemote() string
 }
 
@@ -25,47 +24,61 @@ var _ IUpstreamHelper = &UpstreamHelper{}
 
 func NewUpstreamHelper(
 	c *HelperCommon,
-	getRemoteBranchesSuggestionsFunc func(string) func(string) []*types.Suggestion,
+	suggestions *SuggestionsHelper,
 ) *UpstreamHelper {
 	return &UpstreamHelper{
-		c:                                c,
-		getRemoteBranchesSuggestionsFunc: getRemoteBranchesSuggestionsFunc,
+		c:           c,
+		suggestions: suggestions,
 	}
 }
 
-func (self *UpstreamHelper) ParseUpstream(upstream string) (string, string, error) {
-	var upstreamBranch, upstreamRemote string
-	split := strings.Split(upstream, " ")
-	if len(split) != 2 {
-		return "", "", errors.New(self.c.Tr.InvalidUpstream)
-	}
-
-	upstreamRemote = split[0]
-	upstreamBranch = split[1]
-
-	return upstreamRemote, upstreamBranch, nil
+type Upstream struct {
+	Remote string
+	Branch string
 }
 
-func (self *UpstreamHelper) promptForUpstream(initialContent string, onConfirm func(string) error) error {
+func (self *UpstreamHelper) PromptForUpstreamBranch(chosenRemote string, initialBranch string, onConfirm func(Upstream) error) error {
+	self.c.Log.Debugf("User selected remote '%s'", chosenRemote)
+
+	remoteDoesNotExist := lo.NoneBy(self.c.Model().Remotes, func(remote *models.Remote) bool {
+		return remote.Name == chosenRemote
+	})
+	if remoteDoesNotExist {
+		return fmt.Errorf(self.c.Tr.NoValidRemoteName, chosenRemote)
+	}
 	self.c.Prompt(types.PromptOpts{
-		Title:               self.c.Tr.EnterUpstream,
-		InitialContent:      initialContent,
-		FindSuggestionsFunc: self.getRemoteBranchesSuggestionsFunc(" "),
-		HandleConfirm:       onConfirm,
+		Title:               fmt.Sprintf("Targeting remote %s", chosenRemote),
+		InitialContent:      initialBranch,
+		FindSuggestionsFunc: self.suggestions.GetRemoteBranchesForRemoteSuggestionsFunc(chosenRemote),
+		HandleConfirm: func(chosenBranch string) error {
+			self.c.Log.Debugf("User selected branch '%s' on remote '%s'", chosenRemote, chosenBranch)
+			return onConfirm(Upstream{chosenRemote, chosenRemote})
+		},
+	})
+	return nil
+}
+
+func (self *UpstreamHelper) PromptForUpstream(initialContent Upstream, onConfirm func(Upstream) error) error {
+	self.c.Prompt(types.PromptOpts{
+		Title:               self.c.Tr.SelectTargetRemote,
+		InitialContent:      initialContent.Remote,
+		FindSuggestionsFunc: self.suggestions.GetRemoteSuggestionsFunc(),
+		HandleConfirm: func(toRemote string) error {
+			return self.PromptForUpstreamBranch(toRemote, initialContent.Branch, onConfirm)
+		},
 	})
 
 	return nil
 }
 
-func (self *UpstreamHelper) PromptForUpstreamWithInitialContent(currentBranch *models.Branch, onConfirm func(string) error) error {
+func (self *UpstreamHelper) PromptForUpstreamWithInitialContent(currentBranch *models.Branch, onConfirm func(Upstream) error) error {
 	suggestedRemote := self.GetSuggestedRemote()
-	initialContent := suggestedRemote + " " + currentBranch.Name
 
-	return self.promptForUpstream(initialContent, onConfirm)
+	return self.PromptForUpstream(Upstream{suggestedRemote, currentBranch.Name}, onConfirm)
 }
 
-func (self *UpstreamHelper) PromptForUpstreamWithoutInitialContent(_ *models.Branch, onConfirm func(string) error) error {
-	return self.promptForUpstream("", onConfirm)
+func (self *UpstreamHelper) PromptForUpstreamWithoutInitialContent(onConfirm func(Upstream) error) error {
+	return self.PromptForUpstream(Upstream{}, onConfirm)
 }
 
 func (self *UpstreamHelper) GetSuggestedRemote() string {
