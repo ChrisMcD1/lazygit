@@ -340,11 +340,6 @@
           "description": "Command used when displaying the current branch git log in the main window",
           "default": "git log --graph --color=always --abbrev-commit --decorate --date=relative --pretty=medium {{branchName}} --"
         },
-        "allBranchesLogCmd": {
-          "type": "string",
-          "description": "Command used to display git log of all branches in the main window.\nDeprecated: Use `allBranchesLogCmds` instead.",
-          "default": "git log --graph --all --color=always --abbrev-commit --decorate --date=relative  --pretty=medium"
-        },
         "allBranchesLogCmds": {
           "items": {
             "type": "string"
