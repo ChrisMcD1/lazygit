@@ -425,16 +425,18 @@ func (self *BranchesController) promptToCheckoutWorktree(worktree *models.Worktr
 	return nil
 }
 
-func (self *BranchesController) blockForBranchFinishPush(branch *models.Branch) {
+func (self *BranchesController) blockForBranchFinishPush(branch *models.Branch) *models.Branch {
 	mutexAny, ok := self.branchesBeingPushed.Load(branch.Name)
 	if ok {
-		self.c.Log.Info("We fud a butex on branches being pushed")
+		self.c.Log.Info("We found a mutex on branches being pushed")
 		// We only store mutexes in here
 		mutex, _ := mutexAny.(*sync.Mutex)
 		mutex.Lock()
 		self.c.Log.Infof("We acquired the lock on branch %s!", branch)
+		branch = self.getSelectedItem()
 		mutex.Unlock()
 	}
+	return branch
 }
 
 func (self *BranchesController) handleCreatePullRequest(selectedBranch *models.Branch) error {
