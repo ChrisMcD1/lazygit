@@ -500,7 +500,10 @@ func (self *RefreshHelper) refreshBranches(refreshWorktrees bool, keepBranchSele
 	}
 
 	self.c.Model().Branches = branches
-	self.c.Log.Infof("Updating the list of branches to be %p", branches)
+	self.c.Log.Infof("Updating the list of branches")
+	for _, branch := range branches {
+		self.c.Log.Infof("Branch at pointer %p has name %s and is tracking remote %s", branch, branch.Name, branch.IsTrackingRemote())
+	}
 
 	if refreshWorktrees {
 		self.loadWorktrees()
