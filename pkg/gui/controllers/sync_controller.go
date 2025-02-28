@@ -200,7 +200,6 @@ func (self *SyncController) pushAux(currentBranch *models.Branch, opts pushOpts)
 	return self.c.WithInlineStatus(currentBranch, types.ItemOperationPushing, context.LOCAL_BRANCHES_CONTEXT_KEY, func(task gocui.Task) error {
 		mutex := sync.Mutex{}
 		mutex.Lock()
-		defer mutex.Unlock()
 		self.branchesBeingPushed.Store(currentBranch.Name, &mutex)
 		self.c.LogAction(self.c.Tr.Actions.Push)
 		err := self.c.Git().Sync.Push(
@@ -237,7 +236,10 @@ func (self *SyncController) pushAux(currentBranch *models.Branch, opts pushOpts)
 			}
 			return err
 		}
-		return self.c.Refresh(types.RefreshOptions{Mode: types.ASYNC})
+		return self.c.Refresh(types.RefreshOptions{Mode: types.ASYNC, Then: func() error {
+			mutex.Unlock()
+			return nil
+		}})
 	})
 }
 

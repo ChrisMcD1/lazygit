@@ -53,9 +53,9 @@ func NewRefreshHelper(
 }
 
 func (self *RefreshHelper) Refresh(options types.RefreshOptions) error {
-	if options.Mode == types.ASYNC && options.Then != nil {
-		panic("RefreshOptions.Then doesn't work with mode ASYNC")
-	}
+	// if options.Mode == types.ASYNC && options.Then != nil {
+	// 	panic("RefreshOptions.Then doesn't work with mode ASYNC")
+	// }
 
 	t := time.Now()
 	defer func() {
