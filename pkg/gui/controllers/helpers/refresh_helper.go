@@ -104,6 +104,8 @@ func (self *RefreshHelper) Refresh(options types.RefreshOptions) error {
 			// in the one frame
 			if !self.c.InDemo() && options.Mode == types.ASYNC {
 				self.c.OnWorker(func(t gocui.Task) error {
+					wg.Add(1)
+					defer wg.Done()
 					f()
 					return nil
 				})
@@ -189,11 +191,21 @@ func (self *RefreshHelper) Refresh(options types.RefreshOptions) error {
 
 		self.refreshStatus()
 
-		wg.Wait()
+		if options.Mode == types.ASYNC {
+			go func() {
+				wg.Wait()
+				if options.Then != nil {
+					_ = options.Then()
+					return
+				}
+			}()
+		} else {
 
-		if options.Then != nil {
-			if err := options.Then(); err != nil {
-				return err
+			wg.Wait()
+			if options.Then != nil {
+				if err := options.Then(); err != nil {
+					return err
+				}
 			}
 		}
 
