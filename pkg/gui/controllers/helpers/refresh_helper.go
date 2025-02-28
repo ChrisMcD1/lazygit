@@ -500,7 +500,7 @@ func (self *RefreshHelper) refreshBranches(refreshWorktrees bool, keepBranchSele
 	}
 
 	self.c.Model().Branches = branches
-	self.c.Log.Infof("Updating the list of branches to be %s", branches)
+	self.c.Log.Infof("Updating the list of branches to be %p", branches)
 
 	if refreshWorktrees {
 		self.loadWorktrees()

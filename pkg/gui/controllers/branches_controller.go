@@ -432,8 +432,9 @@ func (self *BranchesController) blockForBranchFinishPush(branch *models.Branch) 
 		// We only store mutexes in here
 		mutex, _ := mutexAny.(*sync.Mutex)
 		mutex.Lock()
-		self.c.Log.Infof("We acquired the lock on branch %s!", branch)
+		self.c.Log.Infof("We acquired the lock on branch %p!", branch)
 		branch = self.getSelectedItem()
+		self.c.Log.Infof("New selected branch is %p!", branch)
 		mutex.Unlock()
 	}
 	return branch
