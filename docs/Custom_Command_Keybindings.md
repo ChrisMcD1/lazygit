@@ -1,4 +1,5 @@
 # Custom Command Keybindings
+other
 
 You can add custom command keybindings in your config.yml (accessible by pressing 'o' on the status panel from within lazygit) like so:
 

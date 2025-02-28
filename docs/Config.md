@@ -317,7 +317,7 @@ git:
   # Prefix to use when skipping hooks. E.g. if set to 'WIP', then pre-commit hooks will be skipped when the commit message starts with 'WIP'
   skipHookPrefix: WIP
 
-  # If true, periodically fetch from remote
+  # If true, periodically fetch from re mote
   autoFetch: true
 
   # If true, periodically refresh files and submodules
@@ -383,6 +383,7 @@ update:
   days: 14
 
 # Background refreshes
+// Change
 refresher:
   # File/submodule refresh interval in seconds.
   # Auto-refresh can be disabled via option 'git.autoRefresh'.
@@ -477,7 +478,7 @@ keybinding:
     togglePanel: <tab>
     prevItem: <up>
     nextItem: <down>
-    prevItem-alt: k
+    prevItem-alt:  k
     nextItem-alt: j
     prevPage: ','
     nextPage: .

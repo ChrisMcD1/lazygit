@@ -3,6 +3,7 @@ package controllers
 import (
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/jesseduffield/gocui"
 	"github.com/jesseduffield/lazygit/pkg/commands/git_commands"
@@ -17,13 +18,15 @@ import (
 type BranchesController struct {
 	baseController
 	*ListControllerTrait[*models.Branch]
-	c *ControllerCommon
+	c                   *ControllerCommon
+	branchesBeingPushed *sync.Map
 }
 
 var _ types.IController = &BranchesController{}
 
 func NewBranchesController(
 	c *ControllerCommon,
+	branchesBeingPushed *sync.Map,
 ) *BranchesController {
 	return &BranchesController{
 		baseController: baseController{},
@@ -34,6 +37,7 @@ func NewBranchesController(
 			c.Contexts().Branches.GetSelected,
 			c.Contexts().Branches.GetSelectedItems,
 		),
+		branchesBeingPushed: branchesBeingPushed,
 	}
 }
 
@@ -421,7 +425,18 @@ func (self *BranchesController) promptToCheckoutWorktree(worktree *models.Worktr
 	return nil
 }
 
+func (self *BranchesController) blockForBranchFinishPush(branch *models.Branch) {
+	mutexAny, ok := self.branchesBeingPushed.Load(branch.Name)
+	if ok {
+		// We only store mutexes in here
+		mutex, _ := mutexAny.(*sync.Mutex)
+		mutex.Lock()
+		mutex.Unlock()
+	}
+}
+
 func (self *BranchesController) handleCreatePullRequest(selectedBranch *models.Branch) error {
+	self.blockForBranchFinishPush(selectedBranch)
 	if !selectedBranch.IsTrackingRemote() {
 		return errors.New(self.c.Tr.PullRequestNoUpstream)
 	}
@@ -752,6 +767,7 @@ func (self *BranchesController) createPullRequestMenu(selectedBranch *models.Bra
 			{
 				LabelColumns: fromToLabelColumns(branch.Name, self.c.Tr.SelectBranch),
 				OnPress: func() error {
+					self.blockForBranchFinishPush(selectedBranch)
 					if !branch.IsTrackingRemote() {
 						return errors.New(self.c.Tr.PullRequestNoUpstream)
 					}

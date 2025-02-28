@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/jesseduffield/gocui"
 	"github.com/jesseduffield/lazygit/pkg/commands/git_commands"
@@ -15,17 +16,20 @@ import (
 
 type SyncController struct {
 	baseController
-	c *ControllerCommon
+	c                   *ControllerCommon
+	branchesBeingPushed *sync.Map
 }
 
 var _ types.IController = &SyncController{}
 
 func NewSyncController(
 	common *ControllerCommon,
+	branchesBeingPushed *sync.Map,
 ) *SyncController {
 	return &SyncController{
-		baseController: baseController{},
-		c:              common,
+		baseController:      baseController{},
+		c:                   common,
+		branchesBeingPushed: branchesBeingPushed,
 	}
 }
 
@@ -194,6 +198,10 @@ type pushOpts struct {
 
 func (self *SyncController) pushAux(currentBranch *models.Branch, opts pushOpts) error {
 	return self.c.WithInlineStatus(currentBranch, types.ItemOperationPushing, context.LOCAL_BRANCHES_CONTEXT_KEY, func(task gocui.Task) error {
+		mutex := sync.Mutex{}
+		mutex.Lock()
+		defer mutex.Unlock()
+		self.branchesBeingPushed.Store(currentBranch.Name, &mutex)
 		self.c.LogAction(self.c.Tr.Actions.Push)
 		err := self.c.Git().Sync.Push(
 			task,
