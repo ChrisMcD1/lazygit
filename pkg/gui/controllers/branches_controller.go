@@ -432,7 +432,7 @@ func (self *BranchesController) blockForBranchFinishPush(branch *models.Branch) 
 		// We only store mutexes in here
 		mutex, _ := mutexAny.(*sync.Mutex)
 		mutex.Lock()
-		self.c.Log.Info("We acquired the lock!")
+		self.c.Log.Infof("We acquired the lock on branch %s!", branch)
 		mutex.Unlock()
 	}
 }
