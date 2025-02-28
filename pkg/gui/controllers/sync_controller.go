@@ -238,6 +238,7 @@ func (self *SyncController) pushAux(currentBranch *models.Branch, opts pushOpts)
 		}
 		return self.c.Refresh(types.RefreshOptions{Mode: types.ASYNC, Then: func() error {
 			mutex.Unlock()
+			self.c.Log.Info("Unlocking mutex")
 			return nil
 		}})
 	})

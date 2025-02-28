@@ -428,9 +428,11 @@ func (self *BranchesController) promptToCheckoutWorktree(worktree *models.Worktr
 func (self *BranchesController) blockForBranchFinishPush(branch *models.Branch) {
 	mutexAny, ok := self.branchesBeingPushed.Load(branch.Name)
 	if ok {
+		self.c.Log.Info("We fud a butex on branches being pushed")
 		// We only store mutexes in here
 		mutex, _ := mutexAny.(*sync.Mutex)
 		mutex.Lock()
+		self.c.Log.Info("We acquired the lock!")
 		mutex.Unlock()
 	}
 }
