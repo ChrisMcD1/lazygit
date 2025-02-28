@@ -772,7 +772,7 @@ func (self *BranchesController) createPullRequestMenu(selectedBranch *models.Bra
 			{
 				LabelColumns: fromToLabelColumns(branch.Name, self.c.Tr.SelectBranch),
 				OnPress: func() error {
-					self.blockForBranchFinishPush(selectedBranch)
+					branch = self.blockForBranchFinishPush(branch)
 					if !branch.IsTrackingRemote() {
 						return errors.New(self.c.Tr.PullRequestNoUpstream)
 					}
