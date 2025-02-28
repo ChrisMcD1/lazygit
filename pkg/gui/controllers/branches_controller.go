@@ -428,21 +428,30 @@ func (self *BranchesController) promptToCheckoutWorktree(worktree *models.Worktr
 
 func (self *BranchesController) blockForBranchFinishPush(branch *models.Branch) *models.Branch {
 	if val, ok := self.branchesBeingPushed.Load(branch.Name); ok {
-		// We only store waitgroups in here
+		// We only store waitgroups in here!!!
 		if wg, ok := val.(*deadlock.WaitGroup); ok {
 			wg.Wait()
-			branch = self.getSelectedItem()
+			updatedBranch, found := lo.Find(self.context().ListViewModel.GetItems(), func(b *models.Branch) bool {
+				return b.CommitHash == branch.CommitHash
+			})
+			// If it _isn't_ found, something wack is going on, so lets stick with the original
+			if found {
+				branch = updatedBranch
+			}
 		}
 	}
 	return branch
 }
 
 func (self *BranchesController) handleCreatePullRequest(selectedBranch *models.Branch) error {
-	selectedBranch = self.blockForBranchFinishPush(selectedBranch)
-	if !selectedBranch.IsTrackingRemote() {
-		return errors.New(self.c.Tr.PullRequestNoUpstream)
-	}
-	return self.createPullRequest(selectedBranch.UpstreamBranch, "")
+	self.c.OnWorker(func(_ gocui.Task) error {
+		selectedBranch = self.blockForBranchFinishPush(selectedBranch)
+		if !selectedBranch.IsTrackingRemote() {
+			return errors.New(self.c.Tr.PullRequestNoUpstream)
+		}
+		return self.createPullRequest(selectedBranch.UpstreamBranch, "")
+	})
+	return nil
 }
 
 func (self *BranchesController) handleCreatePullRequestMenu(selectedBranch *models.Branch) error {
