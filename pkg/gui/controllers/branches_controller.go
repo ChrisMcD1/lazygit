@@ -431,10 +431,10 @@ func (self *BranchesController) blockForBranchFinishPush(branch *models.Branch) 
 		self.c.Log.Info("We found a mutex on branches being pushed")
 		// We only store mutexes in here
 		mutex, _ := mutexAny.(*sync.Mutex)
-		self.c.Log.Infof("We entered the lock on branch %p!", branch)
+		self.c.Log.Infof("We entered the lock at pointer %p has name %s and is tracking remote %s", branch, branch.Name, branch.IsTrackingRemote())
 		mutex.Lock()
 		branch = self.getSelectedItem()
-		self.c.Log.Infof("New selected branch is %p!", branch)
+		self.c.Log.Infof("New selected branch is pointer %p has name %s and is tracking remote %s", branch, branch.Name, branch.IsTrackingRemote())
 		mutex.Unlock()
 	}
 	return branch
