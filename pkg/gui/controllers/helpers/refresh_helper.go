@@ -103,10 +103,10 @@ func (self *RefreshHelper) Refresh(options types.RefreshOptions) error {
 			// everything happens fast and it's better to have everything update
 			// in the one frame
 			if !self.c.InDemo() && options.Mode == types.ASYNC {
+				wg.Add(1)
 				self.c.OnWorker(func(t gocui.Task) error {
-					wg.Add(1)
-					defer wg.Done()
 					f()
+					wg.Done()
 					return nil
 				})
 			} else {
@@ -193,7 +193,9 @@ func (self *RefreshHelper) Refresh(options types.RefreshOptions) error {
 
 		if options.Mode == types.ASYNC {
 			go func() {
+				self.c.Log.Infof("We are waiting for the wg")
 				wg.Wait()
+				self.c.Log.Infof("Wg is over!")
 				if options.Then != nil {
 					_ = options.Then()
 					return
