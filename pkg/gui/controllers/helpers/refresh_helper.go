@@ -103,10 +103,12 @@ func (self *RefreshHelper) Refresh(options types.RefreshOptions) error {
 			// everything happens fast and it's better to have everything update
 			// in the one frame
 			if !self.c.InDemo() && options.Mode == types.ASYNC {
+				self.c.Log.Infof("Incrementing WG for %s", name)
 				wg.Add(1)
 				self.c.OnWorker(func(t gocui.Task) error {
 					f()
 					wg.Done()
+					self.c.Log.Infof("Decrementing WG for %s", name)
 					return nil
 				})
 			} else {
