@@ -3,6 +3,7 @@ package controllers
 import (
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/jesseduffield/gocui"
 	"github.com/jesseduffield/lazygit/pkg/commands/git_commands"
@@ -12,18 +13,21 @@ import (
 	"github.com/jesseduffield/lazygit/pkg/gui/types"
 	"github.com/jesseduffield/lazygit/pkg/utils"
 	"github.com/samber/lo"
+	"github.com/sasha-s/go-deadlock"
 )
 
 type BranchesController struct {
 	baseController
 	*ListControllerTrait[*models.Branch]
-	c *ControllerCommon
+	c                   *ControllerCommon
+	branchesBeingPushed *sync.Map
 }
 
 var _ types.IController = &BranchesController{}
 
 func NewBranchesController(
 	c *ControllerCommon,
+	branchesBeingPushed *sync.Map,
 ) *BranchesController {
 	return &BranchesController{
 		baseController: baseController{},
@@ -34,6 +38,7 @@ func NewBranchesController(
 			c.Contexts().Branches.GetSelected,
 			c.Contexts().Branches.GetSelectedItems,
 		),
+		branchesBeingPushed: branchesBeingPushed,
 	}
 }
 
@@ -421,7 +426,19 @@ func (self *BranchesController) promptToCheckoutWorktree(worktree *models.Worktr
 	return nil
 }
 
+func (self *BranchesController) blockForBranchFinishPush(branch *models.Branch) *models.Branch {
+	if val, ok := self.branchesBeingPushed.Load(branch.Name); ok {
+		// We only store waitgroups in here
+		if wg, ok := val.(*deadlock.WaitGroup); ok {
+			wg.Wait()
+			branch = self.getSelectedItem()
+		}
+	}
+	return branch
+}
+
 func (self *BranchesController) handleCreatePullRequest(selectedBranch *models.Branch) error {
+	selectedBranch = self.blockForBranchFinishPush(selectedBranch)
 	if !selectedBranch.IsTrackingRemote() {
 		return errors.New(self.c.Tr.PullRequestNoUpstream)
 	}
@@ -752,6 +769,7 @@ func (self *BranchesController) createPullRequestMenu(selectedBranch *models.Bra
 			{
 				LabelColumns: fromToLabelColumns(branch.Name, self.c.Tr.SelectBranch),
 				OnPress: func() error {
+					branch = self.blockForBranchFinishPush(branch)
 					if !branch.IsTrackingRemote() {
 						return errors.New(self.c.Tr.PullRequestNoUpstream)
 					}
