@@ -441,7 +441,7 @@ func (self *BranchesController) blockForBranchFinishPush(branch *models.Branch) 
 }
 
 func (self *BranchesController) handleCreatePullRequest(selectedBranch *models.Branch) error {
-	self.blockForBranchFinishPush(selectedBranch)
+	selectedBranch = self.blockForBranchFinishPush(selectedBranch)
 	if !selectedBranch.IsTrackingRemote() {
 		return errors.New(self.c.Tr.PullRequestNoUpstream)
 	}
