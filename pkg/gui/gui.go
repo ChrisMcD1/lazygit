@@ -158,6 +158,10 @@ func (self *StateAccessor) GetRepoPathStack() *utils.StringStack {
 	return self.gui.RepoPathStack
 }
 
+func (self *StateAccessor) GetPendingTasks() []*gocui.PendingTask {
+	return self.gui.g.PendingTasks()
+}
+
 func (self *StateAccessor) GetUpdating() bool {
 	return self.gui.Updating
 }
@@ -692,6 +696,9 @@ func NewGui(
 		func() types.Context { return gui.State.ContextMgr.Current() },
 		gui.createMenu,
 		func(message string, f func(gocui.Task) error) { gui.helpers.AppStatus.WithWaitingStatus(message, f) },
+		func(message string, pending func(gocui.Task) error, f func(gocui.Task) error) {
+			gui.helpers.AppStatus.WithPendingMessage(message, pending, f)
+		},
 		func(message string, f func() error) error {
 			return gui.helpers.AppStatus.WithWaitingStatusSync(message, f)
 		},
@@ -1118,6 +1125,10 @@ func (gui *Gui) onUIThread(f func() error) {
 
 func (gui *Gui) onWorker(f func(gocui.Task) error) {
 	gui.g.OnWorker(f)
+}
+
+func (gui *Gui) onWorkerPending(pending func(gocui.Task) error, f func(gocui.Task) error, begin chan struct{}, cancelListeners []chan<- struct{}) *gocui.PendingTask {
+	return gui.g.OnWorkerPending(pending, f, begin, cancelListeners)
 }
 
 func (gui *Gui) getWindowDimensions(informationStr string, appStatus string) map[string]boxlayout.Dimensions {

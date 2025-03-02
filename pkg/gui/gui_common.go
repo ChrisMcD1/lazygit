@@ -115,6 +115,10 @@ func (self *guiCommon) OnWorker(f func(gocui.Task) error) {
 	self.gui.onWorker(f)
 }
 
+func (self *guiCommon) OnWorkerPending(pending func(gocui.Task) error, f func(gocui.Task) error, begin chan struct{}, cancelListeners []chan<- struct{}) *gocui.PendingTask {
+	return self.gui.onWorkerPending(pending, f, begin, cancelListeners)
+}
+
 func (self *guiCommon) RenderToMainViews(opts types.RefreshMainOpts) {
 	self.gui.refreshMainViews(opts)
 }

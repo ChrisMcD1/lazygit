@@ -10,7 +10,8 @@ type TaskManager struct {
 	idleListeners []chan struct{}
 	tasks         map[int]Task
 	// auto-incrementing id for new tasks
-	nextId int
+	nextId       int
+	pendingTasks []*PendingTask
 
 	mutex sync.Mutex
 }
@@ -20,6 +21,10 @@ func newTaskManager() *TaskManager {
 		tasks:         make(map[int]Task),
 		idleListeners: []chan struct{}{},
 	}
+}
+
+func (self *TaskManager) GetPendingTasks() []*PendingTask {
+	return self.pendingTasks
 }
 
 func (self *TaskManager) NewTask() *TaskImpl {
@@ -34,6 +39,27 @@ func (self *TaskManager) NewTask() *TaskImpl {
 	self.tasks[taskId] = task
 
 	return task
+}
+
+func (self *TaskManager) NewPendingTask(cancelListeners []chan<- struct{}) *PendingTask {
+	underyling := self.NewTask()
+	// TODO: Keep a record of which tasks are there
+
+	self.mutex.Lock()
+	defer self.mutex.Unlock()
+
+	self.nextId++
+	taskId := self.nextId
+	onDone := func() { self.deletePendingTask(taskId) }
+
+	pendingTask := PendingTask{
+		id:              taskId,
+		CancelListeners: cancelListeners,
+		Underlying:      underyling,
+		onDone:          onDone,
+	}
+	self.pendingTasks = append(self.pendingTasks, &pendingTask)
+	return &pendingTask
 }
 
 func (self *TaskManager) addIdleListener(c chan struct{}) {
@@ -63,5 +89,17 @@ func (self *TaskManager) withMutex(f func()) {
 func (self *TaskManager) delete(taskId int) {
 	self.withMutex(func() {
 		delete(self.tasks, taskId)
+	})
+}
+
+func (self *TaskManager) deletePendingTask(pendingTaskId int) {
+	self.withMutex(func() {
+		pendingTasks := make([]*PendingTask, 0, len(self.pendingTasks)-1)
+		for _, task := range self.pendingTasks {
+			if task.id != pendingTaskId {
+				pendingTasks = append(pendingTasks, task)
+			}
+		}
+		self.pendingTasks = pendingTasks
 	})
 }

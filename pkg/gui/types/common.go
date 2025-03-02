@@ -68,6 +68,7 @@ type IGuiCommon interface {
 	// Runs a function in a goroutine. Use this whenever you want to run a goroutine and keep track of the fact
 	// that lazygit is still busy. See docs/dev/Busy.md
 	OnWorker(f func(gocui.Task) error)
+	OnWorkerPending(pending func(gocui.Task) error, f func(gocui.Task) error, begin chan struct{}, cancelListeners []chan<- struct{}) *gocui.PendingTask
 	// Function to call at the end of our 'layout' function which renders views
 	// For example, you may want a view's line to be focused only after that view is
 	// resized, if in accordion mode.
@@ -126,6 +127,7 @@ type IPopupHandler interface {
 	// Shows a popup prompting the user for input.
 	Prompt(opts PromptOpts)
 	WithWaitingStatus(message string, f func(gocui.Task) error) error
+	WithPendingMessage(message string, pending func(gocui.Task) error, f func(gocui.Task) error) error
 	WithWaitingStatusSync(message string, f func() error) error
 	Menu(opts CreateMenuOptions) error
 	Toast(message string)
@@ -353,6 +355,7 @@ type IStateAccessor interface {
 	GetItemOperation(item HasUrn) ItemOperation
 	SetItemOperation(item HasUrn, operation ItemOperation)
 	ClearItemOperation(item HasUrn)
+	GetPendingTasks() []*gocui.PendingTask
 }
 
 type IRepoStateAccessor interface {

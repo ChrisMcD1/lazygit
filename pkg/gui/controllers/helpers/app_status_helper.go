@@ -64,6 +64,27 @@ func (self *AppStatusHelper) WithWaitingStatus(message string, f func(gocui.Task
 	})
 }
 
+func (self *AppStatusHelper) WithPendingMessage(
+	message string,
+	pending func(gocui.Task) error,
+	f func(gocui.Task) error,
+) {
+	begin := make(chan struct{}, 1)
+	cancel := make(chan struct{}, 1)
+	cancelListeners := []chan<- struct{}{cancel}
+	self.c.OnWorkerPending(pending, f, begin, cancelListeners)
+	self.c.OnWorker(func(task gocui.Task) error {
+		err := self.WithWaitingStatusImpl(message, func(_ gocui.Task) error {
+			select {
+			case <-cancel:
+				return nil
+			}
+		}, task)
+		return err
+	},
+	)
+}
+
 func (self *AppStatusHelper) WithWaitingStatusImpl(message string, f func(gocui.Task) error, task gocui.Task) error {
 	return self.statusMgr().WithWaitingStatus(message, self.renderAppStatus, func(waitingStatusHandle *status.WaitingStatusHandle) error {
 		return f(appStatusHelperTask{task, waitingStatusHandle})
