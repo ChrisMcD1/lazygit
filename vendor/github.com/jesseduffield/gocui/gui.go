@@ -260,6 +260,10 @@ func (g *Gui) NewTask() *TaskImpl {
 	return g.taskManager.NewTask()
 }
 
+func (g *Gui) NewPendingTask(cancel <-chan struct{}, begin <-chan struct{}) *PendingTask {
+	return g.taskManager.NewPendingTask(cancel, begin)
+}
+
 // An idle listener listens for when the program is idle. This is useful for
 // integration tests which can wait for the program to be idle before taking
 // the next step in the test.
@@ -690,6 +694,27 @@ func (g *Gui) OnWorker(f func(Task) error) {
 		g.onWorkerAux(f, task)
 		task.Done()
 	}()
+}
+
+func (g *Gui) OnWorkerPending(f func(Task) error, cancel <-chan struct{}, begin <-chan struct{}) {
+	task := g.NewPendingTask(cancel, begin)
+	go func() {
+		g.kickoffPendingTask(f, *task)
+		task.Underlying.Done()
+	}()
+}
+
+func (g *Gui) kickoffPendingTask(f func(Task) error, task PendingTask) {
+	task.IsWaiting = true
+	select {
+	case _ = <-task.Cancel:
+		task.IsWaiting = false
+		return
+	case _ = <-task.Begin:
+		task.IsWaiting = false
+		g.onWorkerAux(f, task.Underlying)
+		return
+	}
 }
 
 func (g *Gui) onWorkerAux(f func(Task) error, task Task) {

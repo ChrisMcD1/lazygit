@@ -1120,6 +1120,10 @@ func (gui *Gui) onWorker(f func(gocui.Task) error) {
 	gui.g.OnWorker(f)
 }
 
+func (gui *Gui) onWorkerPending(f func(gocui.Task) error) {
+	gui.g.OnWorker(f)
+}
+
 func (gui *Gui) getWindowDimensions(informationStr string, appStatus string) map[string]boxlayout.Dimensions {
 	return gui.helpers.WindowArrangement.GetWindowDimensions(informationStr, appStatus)
 }

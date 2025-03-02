@@ -115,6 +115,10 @@ func (self *guiCommon) OnWorker(f func(gocui.Task) error) {
 	self.gui.onWorker(f)
 }
 
+func (self *guiCommon) OnWorkerPending(f func(gocui.Task) error) {
+	self.gui.onWorker(f)
+}
+
 func (self *guiCommon) RenderToMainViews(opts types.RefreshMainOpts) {
 	self.gui.refreshMainViews(opts)
 }

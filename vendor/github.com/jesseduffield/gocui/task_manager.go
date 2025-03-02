@@ -10,7 +10,8 @@ type TaskManager struct {
 	idleListeners []chan struct{}
 	tasks         map[int]Task
 	// auto-incrementing id for new tasks
-	nextId int
+	nextId        int
+	nextPendingId int
 
 	mutex sync.Mutex
 }
@@ -34,6 +35,18 @@ func (self *TaskManager) NewTask() *TaskImpl {
 	self.tasks[taskId] = task
 
 	return task
+}
+
+func (self *TaskManager) NewPendingTask(cancel <-chan struct{}, begin <-chan struct{}) *PendingTask {
+	underyling := self.NewTask()
+	// TODO: Keep a record of which tasks are there
+
+	return &PendingTask{
+		Cancel:     cancel,
+		Begin:      begin,
+		IsWaiting:  false,
+		Underlying: underyling,
+	}
 }
 
 func (self *TaskManager) addIdleListener(c chan struct{}) {

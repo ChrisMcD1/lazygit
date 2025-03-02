@@ -447,13 +447,28 @@ func (self *BranchesController) blockForBranchFinishPush(branch *models.Branch) 
 }
 
 func (self *BranchesController) handleCreatePullRequest(selectedBranch *models.Branch) error {
-	self.c.OnWorker(func(_ gocui.Task) error {
-		selectedBranch = self.blockForBranchFinishPush(selectedBranch)
+	cancel := make(chan struct{})
+	begin := make(chan struct{})
+	go func() {
+		_ = self.blockForBranchFinishPush(selectedBranch)
+		begin <- struct{}{}
+	}()
+	self.c.GocuiGui().OnWorkerPending(func(_ gocui.Task) error {
+		// When we refresh after a branch push, the entire branch list gets replaced, so we must re-retrieve the
+		// branch pointer. The currently selected item might have changed since we initially requested the pull request,
+		// but the commit hash should continue to be the same.
+		updatedBranch, found := lo.Find(self.context().ListViewModel.GetItems(), func(b *models.Branch) bool {
+			return b.CommitHash == selectedBranch.CommitHash
+		})
+		// If it _isn't_ found, something wack is going on, so lets stick with the original
+		if found {
+			selectedBranch = updatedBranch
+		}
 		if !selectedBranch.IsTrackingRemote() {
 			return errors.New(self.c.Tr.PullRequestNoUpstream)
 		}
 		return self.createPullRequest(selectedBranch.UpstreamBranch, "")
-	})
+	}, cancel, begin)
 	return nil
 }
 
