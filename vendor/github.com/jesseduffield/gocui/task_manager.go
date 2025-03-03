@@ -41,7 +41,7 @@ func (self *TaskManager) NewTask() *TaskImpl {
 	return task
 }
 
-func (self *TaskManager) NewPendingTask(name string, cancel chan struct{}, begin <-chan struct{}) *PendingTask {
+func (self *TaskManager) NewPendingTask(name string, begin <-chan struct{}) *PendingTask {
 	underyling := self.NewTask()
 	// TODO: Keep a record of which tasks are there
 
@@ -50,6 +50,7 @@ func (self *TaskManager) NewPendingTask(name string, cancel chan struct{}, begin
 
 	self.nextId++
 	taskId := self.nextId
+	cancel := make(chan struct{})
 	onDone := func() { self.deletePendingTask(taskId) }
 
 	pendingTask := PendingTask{

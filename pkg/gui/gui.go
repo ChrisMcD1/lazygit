@@ -696,6 +696,9 @@ func NewGui(
 		func() types.Context { return gui.State.ContextMgr.Current() },
 		gui.createMenu,
 		func(message string, f func(gocui.Task) error) { gui.helpers.AppStatus.WithWaitingStatus(message, f) },
+		func(message string, pending func(gocui.Task) error, f func(gocui.Task) error) {
+			gui.helpers.AppStatus.WithPendingMessage(message, pending, f)
+		},
 		func(message string, f func() error) error {
 			return gui.helpers.AppStatus.WithWaitingStatusSync(message, f)
 		},
@@ -1124,8 +1127,8 @@ func (gui *Gui) onWorker(f func(gocui.Task) error) {
 	gui.g.OnWorker(f)
 }
 
-func (gui *Gui) onWorkerPending(f func(gocui.Task) error) {
-	gui.g.OnWorker(f)
+func (gui *Gui) onWorkerPending(name string, f func(gocui.Task) error, begin <-chan struct{}) {
+	gui.g.OnWorkerPending(name, f, begin)
 }
 
 func (gui *Gui) getWindowDimensions(informationStr string, appStatus string) map[string]boxlayout.Dimensions {

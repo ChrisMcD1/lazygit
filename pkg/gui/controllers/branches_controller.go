@@ -448,15 +448,11 @@ func (self *BranchesController) blockForBranchFinishPush(branch *models.Branch) 
 
 func (self *BranchesController) handleCreatePullRequest(selectedBranch *models.Branch) error {
 	self.c.Log.Infof("We are registering a pull request creation for %s", selectedBranch.Name)
-	cancel := make(chan struct{})
-	begin := make(chan struct{})
-	self.c.WithWaitingStatus("Waiting to open PR", func(_ gocui.Task) error {
-		_ = self.blockForBranchFinishPush(selectedBranch)
-		begin <- struct{}{}
-		return nil
-	})
-	self.c.GocuiGui().OnWorkerPending(
-		fmt.Sprintf("Creating Pull Request for branch %s", selectedBranch.Name),
+	self.c.WithPendingMessage("Waiting to open PR",
+		func(_ gocui.Task) error {
+			_ = self.blockForBranchFinishPush(selectedBranch)
+			return nil
+		},
 		func(_ gocui.Task) error {
 			self.c.Log.Infof("Identified that the push has finished")
 			// When we refresh after a branch push, the entire branch list gets replaced, so we must re-retrieve the
@@ -477,7 +473,7 @@ func (self *BranchesController) handleCreatePullRequest(selectedBranch *models.B
 				return errors.New(self.c.Tr.PullRequestNoUpstream)
 			}
 			return self.createPullRequest(selectedBranch.UpstreamBranch, "")
-		}, cancel, begin)
+		})
 	return nil
 }
 
