@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/jesseduffield/gocui"
 	"github.com/jesseduffield/lazygit/pkg/commands/git_commands"
@@ -448,6 +449,17 @@ func (self *BranchesController) blockForBranchFinishPush(branch *models.Branch) 
 
 func (self *BranchesController) handleCreatePullRequest(selectedBranch *models.Branch) error {
 	self.c.Log.Infof("We are creating pull requset for %s", selectedBranch.Name)
+	go func() {
+		// TODO: Remove this and put in a better renndering system :)
+		ticker := time.NewTicker(time.Millisecond * 500)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				self.c.ContextForKey("status").HandleRender()
+			}
+		}
+	}()
 	cancel := make(chan struct{})
 	begin := make(chan struct{})
 	go func() {
