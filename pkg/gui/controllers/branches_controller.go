@@ -457,7 +457,7 @@ func (self *BranchesController) handleCreatePullRequest(selectedBranch *models.B
 	self.c.GocuiGui().OnWorkerPending(
 		fmt.Sprintf("Creating Pull Request for branch %s", selectedBranch.Name),
 		func(_ gocui.Task) error {
-			fmt.Sprintf("Identified that the push has finished")
+			self.c.Log.Infof("Identified that the push has finished")
 			// When we refresh after a branch push, the entire branch list gets replaced, so we must re-retrieve the
 			// branch pointer. The currently selected item might have changed since we initially requested the pull request,
 			// but the commit hash should continue to be the same.
@@ -466,13 +466,13 @@ func (self *BranchesController) handleCreatePullRequest(selectedBranch *models.B
 			})
 			// If it _isn't_ found, something wack is going on, so lets stick with the original
 			if found {
-				fmt.Sprintf("Found a thing!")
+				self.c.Log.Infof("Found a thing!")
 				selectedBranch = updatedBranch
 			} else {
-				fmt.Sprintf("Found nothing :(")
+				self.c.Log.Infof("Found nothing :(")
 			}
 			if !selectedBranch.IsTrackingRemote() {
-				fmt.Sprintf("Returning TRacking")
+				self.c.Log.Infof("Returning TRacking")
 				return errors.New(self.c.Tr.PullRequestNoUpstream)
 			}
 			return self.createPullRequest(selectedBranch.UpstreamBranch, "")
