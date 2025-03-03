@@ -260,11 +260,11 @@ func (g *Gui) NewTask() *TaskImpl {
 	return g.taskManager.NewTask()
 }
 
-func (g *Gui) PendingTaskNames() []string {
-	return g.taskManager.PendingTaskNames()
+func (g *Gui) PendingTasks() []*PendingTask {
+	return g.taskManager.GetPendingTasks()
 }
 
-func (g *Gui) NewPendingTask(name string, cancel <-chan struct{}, begin <-chan struct{}) *PendingTask {
+func (g *Gui) NewPendingTask(name string, cancel chan struct{}, begin <-chan struct{}) *PendingTask {
 	return g.taskManager.NewPendingTask(name, cancel, begin)
 }
 
@@ -700,7 +700,7 @@ func (g *Gui) OnWorker(f func(Task) error) {
 	}()
 }
 
-func (g *Gui) OnWorkerPending(name string, f func(Task) error, cancel <-chan struct{}, begin <-chan struct{}) {
+func (g *Gui) OnWorkerPending(name string, f func(Task) error, cancel chan struct{}, begin <-chan struct{}) {
 	task := g.NewPendingTask(name, cancel, begin)
 	go func() {
 		g.kickoffPendingTask(f, *task)

@@ -3,7 +3,7 @@ package gocui
 type PendingTask struct {
 	id          int
 	DisplayText string
-	Cancel      <-chan struct{}
+	Cancel      chan struct{}
 	Begin       <-chan struct{}
 	Underlying  Task
 	onDone      func()

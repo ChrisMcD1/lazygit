@@ -353,6 +353,7 @@ type IStateAccessor interface {
 	GetItemOperation(item HasUrn) ItemOperation
 	SetItemOperation(item HasUrn, operation ItemOperation)
 	ClearItemOperation(item HasUrn)
+	GetPendingTasks() []*gocui.PendingTask
 }
 
 type IRepoStateAccessor interface {

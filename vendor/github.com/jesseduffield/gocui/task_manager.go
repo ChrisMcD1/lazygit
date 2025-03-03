@@ -23,12 +23,8 @@ func newTaskManager() *TaskManager {
 	}
 }
 
-func (self *TaskManager) PendingTaskNames() []string {
-	names := make([]string, 0, len(self.pendingTasks))
-	for _, task := range self.pendingTasks {
-		names = append(names, task.DisplayText)
-	}
-	return names
+func (self *TaskManager) GetPendingTasks() []*PendingTask {
+	return self.pendingTasks
 }
 
 func (self *TaskManager) NewTask() *TaskImpl {
@@ -45,7 +41,7 @@ func (self *TaskManager) NewTask() *TaskImpl {
 	return task
 }
 
-func (self *TaskManager) NewPendingTask(name string, cancel <-chan struct{}, begin <-chan struct{}) *PendingTask {
+func (self *TaskManager) NewPendingTask(name string, cancel chan struct{}, begin <-chan struct{}) *PendingTask {
 	underyling := self.NewTask()
 	// TODO: Keep a record of which tasks are there
 

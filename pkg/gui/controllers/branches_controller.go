@@ -450,12 +450,9 @@ func (self *BranchesController) handleCreatePullRequest(selectedBranch *models.B
 	self.c.Log.Infof("We are registering a pull request creation for %s", selectedBranch.Name)
 	cancel := make(chan struct{})
 	begin := make(chan struct{})
-	waitFunc := func() {
+	self.c.WithWaitingStatus("Waiting to open PR", func(_ gocui.Task) error {
 		_ = self.blockForBranchFinishPush(selectedBranch)
 		begin <- struct{}{}
-	}
-	self.c.WithWaitingStatus("Waiting to open PR", func(_ gocui.Task) error {
-		waitFunc()
 		return nil
 	})
 	self.c.GocuiGui().OnWorkerPending(
