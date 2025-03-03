@@ -131,6 +131,7 @@ func (self *AppStatusHelper) renderAppStatusSync(stop chan struct{}) {
 				appStatus, color := self.statusMgr().GetStatusString(self.c.UserConfig())
 				self.c.Views().AppStatus.FgColor = color
 				self.c.SetViewContent(self.c.Views().AppStatus, appStatus)
+				_ = self.c.GocuiGui().ForceRedrawViews(self.c.Views().Status)
 				// Redraw all views of the bottom line:
 				bottomLineViews := []*gocui.View{
 					self.c.Views().AppStatus, self.c.Views().Options, self.c.Views().Information,
