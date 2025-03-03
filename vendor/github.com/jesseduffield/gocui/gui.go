@@ -260,8 +260,12 @@ func (g *Gui) NewTask() *TaskImpl {
 	return g.taskManager.NewTask()
 }
 
-func (g *Gui) NewPendingTask(cancel <-chan struct{}, begin <-chan struct{}) *PendingTask {
-	return g.taskManager.NewPendingTask(cancel, begin)
+func (g *Gui) PendingTaskNames() []string {
+	return g.taskManager.PendingTaskNames()
+}
+
+func (g *Gui) NewPendingTask(name string, cancel <-chan struct{}, begin <-chan struct{}) *PendingTask {
+	return g.taskManager.NewPendingTask(name, cancel, begin)
 }
 
 // An idle listener listens for when the program is idle. This is useful for
@@ -696,23 +700,21 @@ func (g *Gui) OnWorker(f func(Task) error) {
 	}()
 }
 
-func (g *Gui) OnWorkerPending(f func(Task) error, cancel <-chan struct{}, begin <-chan struct{}) {
-	task := g.NewPendingTask(cancel, begin)
+func (g *Gui) OnWorkerPending(name string, f func(Task) error, cancel <-chan struct{}, begin <-chan struct{}) {
+	task := g.NewPendingTask(name, cancel, begin)
 	go func() {
 		g.kickoffPendingTask(f, *task)
-		task.Underlying.Done()
 	}()
 }
 
 func (g *Gui) kickoffPendingTask(f func(Task) error, task PendingTask) {
-	task.IsWaiting = true
 	select {
 	case _ = <-task.Cancel:
-		task.IsWaiting = false
+		task.DoCancel()
 		return
 	case _ = <-task.Begin:
-		task.IsWaiting = false
 		g.onWorkerAux(f, task.Underlying)
+		task.Done()
 		return
 	}
 }

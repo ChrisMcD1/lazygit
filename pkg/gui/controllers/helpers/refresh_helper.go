@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -13,7 +14,7 @@ import (
 	"github.com/jesseduffield/lazygit/pkg/gui/context"
 	"github.com/jesseduffield/lazygit/pkg/gui/filetree"
 	"github.com/jesseduffield/lazygit/pkg/gui/mergeconflicts"
-	"github.com/jesseduffield/lazygit/pkg/gui/presentation"
+	// "github.com/jesseduffield/lazygit/pkg/gui/presentation"
 	"github.com/jesseduffield/lazygit/pkg/gui/types"
 	"github.com/jesseduffield/lazygit/pkg/utils"
 	"github.com/samber/lo"
@@ -724,12 +725,13 @@ func (self *RefreshHelper) refreshStatus() {
 		return
 	}
 
-	workingTreeState := self.c.Git().Status.WorkingTreeState()
-	linkedWorktreeName := self.worktreeHelper.GetLinkedWorktreeName()
+	// workingTreeState := self.c.Git().Status.WorkingTreeState()
+	// linkedWorktreeName := self.worktreeHelper.GetLinkedWorktreeName()
+	//
+	// repoName := self.c.Git().RepoPaths.RepoName()
 
-	repoName := self.c.Git().RepoPaths.RepoName()
-
-	status := presentation.FormatStatus(repoName, currentBranch, types.ItemOperationNone, linkedWorktreeName, workingTreeState, self.c.Tr, self.c.UserConfig())
+	// status := presentation.FormatStatus(repoName, currentBranch, types.ItemOperationNone, linkedWorktreeName, workingTreeState, self.c.Tr, self.c.UserConfig())
+	status := fmt.Sprintf("%s", self.c.GocuiGui().PendingTaskNames())
 
 	self.c.SetViewContent(self.c.Views().Status, status)
 }

@@ -1,8 +1,19 @@
 package gocui
 
 type PendingTask struct {
-	Cancel     <-chan struct{}
-	Begin      <-chan struct{}
-	IsWaiting  bool
-	Underlying Task
+	id          int
+	DisplayText string
+	Cancel      <-chan struct{}
+	Begin       <-chan struct{}
+	Underlying  Task
+	onDone      func()
+}
+
+func (self *PendingTask) Done() {
+	self.onDone()
+	self.Underlying.Done()
+}
+
+func (self *PendingTask) DoCancel() {
+	self.onDone()
 }
