@@ -447,13 +447,17 @@ func (self *BranchesController) blockForBranchFinishPush(branch *models.Branch) 
 }
 
 func (self *BranchesController) handleCreatePullRequest(selectedBranch *models.Branch) error {
-	self.c.Log.Infof("We are creating pull requset for %s", selectedBranch.Name)
+	self.c.Log.Infof("We are registering a pull request creation for %s", selectedBranch.Name)
 	cancel := make(chan struct{})
 	begin := make(chan struct{})
-	go func() {
+	waitFunc := func() {
 		_ = self.blockForBranchFinishPush(selectedBranch)
 		begin <- struct{}{}
-	}()
+	}
+	self.c.WithWaitingStatus("Waiting to open PR", func(_ gocui.Task) error {
+		waitFunc()
+		return nil
+	})
 	self.c.GocuiGui().OnWorkerPending(
 		fmt.Sprintf("Creating Pull Request for branch %s", selectedBranch.Name),
 		func(_ gocui.Task) error {
