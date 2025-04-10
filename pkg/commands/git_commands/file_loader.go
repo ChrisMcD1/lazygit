@@ -179,7 +179,9 @@ func (self *FileLoader) gitStatus(opts GitStatusOptions) ([]FileStatus, error) {
 		).
 		ToArgv()
 
+	self.Log.Info("Prior to running the git status")
 	statusLines, _, err := self.cmd.New(cmdArgs).DontLog().RunWithOutputs()
+	self.Log.Info("After to running the git status")
 	if err != nil {
 		return []FileStatus{}, err
 	}
