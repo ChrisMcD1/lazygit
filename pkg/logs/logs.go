@@ -4,6 +4,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -30,6 +31,9 @@ func init() {
 func NewProductionLogger() *logrus.Entry {
 	logger := logrus.New()
 	logger.Out = io.Discard
+	logger.SetFormatter(&logrus.JSONFormatter{
+		TimestampFormat: time.RFC3339Nano,
+	})
 	logger.SetLevel(logrus.ErrorLevel)
 	return formatted(logger)
 }
@@ -37,6 +41,9 @@ func NewProductionLogger() *logrus.Entry {
 func NewDevelopmentLogger(logPath string) *logrus.Entry {
 	logger := logrus.New()
 	logger.SetLevel(getLogLevel())
+	logger.SetFormatter(&logrus.JSONFormatter{
+		TimestampFormat: time.RFC3339Nano,
+	})
 
 	file, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o666)
 	if err != nil {
@@ -49,7 +56,9 @@ func NewDevelopmentLogger(logPath string) *logrus.Entry {
 func formatted(log *logrus.Logger) *logrus.Entry {
 	// highly recommended: tail -f development.log | humanlog
 	// https://github.com/aybabtme/humanlog
-	log.Formatter = &logrus.JSONFormatter{}
+	log.Formatter = &logrus.JSONFormatter{
+		TimestampFormat: time.RFC3339Nano,
+	}
 
 	return log.WithFields(logrus.Fields{})
 }
