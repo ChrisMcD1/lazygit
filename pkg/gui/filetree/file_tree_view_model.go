@@ -1,8 +1,11 @@
 package filetree
 
 import (
+	"fmt"
+	"math/rand"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/jesseduffield/lazygit/pkg/commands/models"
 	"github.com/jesseduffield/lazygit/pkg/gui/context/traits"
@@ -60,6 +63,10 @@ func (self *FileTreeViewModel) GetSelectedItems() ([]*FileNode, int, int) {
 	}
 
 	startIdx, endIdx := self.GetSelectionRange()
+
+	fmt.Println("Began Sleep")
+	time.Sleep(time.Duration(rand.Intn(20)) * time.Millisecond)
+	fmt.Println("Finished Sleep")
 
 	nodes := []*FileNode{}
 	for i := startIdx; i <= endIdx; i++ {

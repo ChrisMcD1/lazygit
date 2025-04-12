@@ -1,7 +1,9 @@
 package filetree
 
 import (
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/jesseduffield/lazygit/pkg/commands/models"
 	"github.com/stretchr/testify/assert"
@@ -89,5 +91,41 @@ func TestFilterAction(t *testing.T) {
 			result := mngr.getFilesForDisplay()
 			assert.EqualValues(t, s.expected, result)
 		})
+	}
+}
+
+func TestRefreshRaceCondition(t *testing.T) {
+	var filesMut sync.Mutex
+	files := []*models.File{
+		{Path: "dir2/dir2/file4", ShortStatus: "DU"},
+		{Path: "file1", ShortStatus: "UU"},
+	}
+	getFiles := func() []*models.File {
+		filesMut.Lock()
+		defer filesMut.Unlock()
+		return files
+	}
+	fileTree := NewFileTreeViewModel(getFiles, nil, true)
+	fileTree.SetTree()
+
+	items := make(chan []*FileNode)
+
+	// Purposefully not synchronozing these reads and writes to see what happens
+	go func() {
+		i, _, _ := fileTree.GetSelectedItems()
+		items <- i
+	}()
+	time.Sleep(10 * time.Millisecond)
+	// After a delay, we clear the files
+	go func() {
+		filesMut.Lock()
+		files = []*models.File{}
+		filesMut.Unlock()
+		fileTree.SetTree()
+	}()
+
+	received := <-items
+	for _, r := range received {
+		assert.NotNil(t, r)
 	}
 }
