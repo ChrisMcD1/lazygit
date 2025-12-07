@@ -279,6 +279,7 @@ func (self *CommitCommands) ShowFileContentCmdObj(hash string, filePath string) 
 func (self *CommitCommands) Revert(hashes []string, isMerge bool) error {
 	cmdArgs := NewGitCmd("revert").
 		ArgIf(isMerge, "-m", "1").
+		ArgIf(self.signoffFlag() != "", self.signoffFlag()).
 		Arg(hashes...).
 		ToArgv()
 
